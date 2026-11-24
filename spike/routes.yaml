@@ -1,0 +1,17 @@
+# Real trips for the risk check. Coordinates are [latitude, longitude]
+# (right-click a spot in Google Maps and click the numbers to copy them).
+# Use public places as start and end points, not a home address:
+# this file is published in the repository.
+#
+# For each trip, describe in `notes` where the stairs really are and which way
+# you actually walk it with a stroller. That is what the router is checked against.
+
+trips:
+  - name: baixa-to-castelo
+    from: [38.71395, -9.13834]   # Praça da Figueira
+    to: [38.71391, -9.13336]     # Castelo de São Jorge entrance
+    notes: >
+      Example trip to check the setup. The shortest walk climbs stairs through
+      Mouraria/Alfama; the stroller way is the city lifts
+      Fanqueiros -> Madalena -> Chão do Loureiro -> Costa do Castelo.
+      (Lifts are not part of the router yet; expect a long detour or no route.)
