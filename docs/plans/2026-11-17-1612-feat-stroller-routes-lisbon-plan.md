@@ -12,15 +12,15 @@ execution: code
 
 ## Goal Capsule
 
-- **Objective:** Родитель с коляской в Лиссабоне перед выходом из дома знает, по какому пути он дойдёт без лестниц и изнуряющих подъёмов, или честно знает, что такого пути нет.
-- **Means:** некоммерческий помощник-компаньон рядом с Google Maps: принимает ссылку на место или маршрут, отвечает текстом и возвращает подходящий путь ссылкой в Google Maps.
-- **Product authority:** автор проекта (основная пользовательница и первый тестировщик).
-- **Authority hierarchy:** Product Contract (R-ID) решает поведение; Key Technical Decisions (KTD) решают механизм в рамках R; юниты не переопределяют ни то, ни другое.
-- **Open blockers:** нет блокеров планирования. Для U4 нужен ключ Google Maps Platform с биллинговым аккаунтом на португальский адрес (действие автора, см. Open Questions).
-- **Stop conditions:** если проверка рисков U1 не прошла (маршрутизатор не находит пути без лестниц, совпадающие с опытом автора, ссылки Google не удерживают путь при ≤3 промежуточных точках, или путь, который рисует приложение Google Maps при нажатии ссылки в Telegram, расходится с линией computeRoutes либо теряет промежуточные точки), работа останавливается после U1 с отчётом, а R6 и R10 возвращаются на пересмотр в `ce-brainstorm`.
-- **Execution profile:** одна ветка и, когда подключат GitHub, один PR. U1 идёт первым и является точкой «идём или нет» перед U2–U8.
-- **Who finishes:** исполнитель (`ce-work`) строит и проверяет U1–U8 локально. Автор проходит маршруты в U1 и пилоте, заводит ключи (Telegram, Google, Anthropic), учётную запись DGT для скачивания рельефа и сервер.
-- **Product Contract preservation:** restructured, no scope change: вопросы «Канал», «Геометрия маршрута Google для R2» и «Формат хранения отметок» из Deferred to Planning решены в KTD5, KTD4 и KTD10; порог уклона перенесён в KTD9 с настройкой в U1.
+- **Objective:** A parent with a stroller in Lisbon knows, before leaving home, which route gets them there without stairs or exhausting climbs, or knows honestly that no such route exists.
+- **Means:** a non-commercial companion assistant next to Google Maps: it accepts a link to a place or a route, replies in text, and returns a suitable route as a Google Maps link.
+- **Product authority:** the project author (primary user and first tester).
+- **Authority hierarchy:** the Product Contract (R-IDs) decides behavior; Key Technical Decisions (KTDs) decide the mechanism within the Rs; units override neither.
+- **Open blockers:** no planning blockers. U4 needs a Google Maps Platform key on a billing account with a Portuguese address (an author action, see Outstanding Questions).
+- **Stop conditions:** if the U1 risk check fails (the router does not find stair-free routes that match the author's experience, Google links do not hold the route with ≤3 waypoints, or the route the Google Maps app draws when the link is tapped in Telegram differs from the computeRoutes polyline or drops waypoints), work stops after U1 with a report, and R6 and R10 go back to `ce-brainstorm` for revision.
+- **Execution profile:** work happens on feature branches with pull requests to the public GitHub repository. U1 comes first and is the go/no-go gate before U2–U8.
+- **Who finishes:** the executor (`ce-work`) builds and verifies U1–U8. The author walks the routes in U1 and the pilot, and sets up the keys (Telegram, Google, Anthropic), the DGT account for the elevation download, and the server.
+- **Product Contract preservation:** restructured, no scope change: the deferred-to-planning questions "Channel", "Google route geometry for R2" and "Mark storage format" are resolved in KTD5, KTD4 and KTD10; the slope threshold moved to KTD9, tuned in U1.
 
 ---
 
@@ -28,147 +28,147 @@ execution: code
 
 ### Summary
 
-Помощник в мессенджере для родителей с колясками в Лиссабоне.
-Если прислать место назначения, он строит путь без лестниц и крутых подъёмов, используя городские лифты и фуникулёры, и отдаёт его ссылкой в Google Maps.
-Если прислать маршрут Google, он показывает, где на нём лестница или крутой участок и как их обойти.
-После прогулки родитель одним касанием отмечает узкие тротуары и плохое покрытие, и эти отметки копятся для следующих версий.
+A messenger assistant for parents with strollers in Lisbon.
+Send it a destination and it builds a route with no stairs and no steep climbs, using the city's public lifts and funiculars, and returns it as a Google Maps link.
+Send it a Google route and it shows where that route has stairs or a steep section and how to get around them.
+After a walk, a parent can mark narrow sidewalks and bad surfaces with one tap, and these marks accumulate for later versions.
 
 ### Problem Frame
 
-Google Maps строит кратчайший пеший путь. В Лиссабоне он часто идёт по лестницам-улицам и крутым склонам, хотя рядом есть обход: подняться на публичном лифте и спуститься с горы, или пройти по ровной улице чуть длиннее.
-Режим «без ступенек» у Google есть, но он рассчитан на коляски для людей с инвалидностью, работает только там, где у Google есть данные, и не умеет предпочитать спуск подъёму.
+Google Maps builds the shortest walking route. In Lisbon that route often goes up staircase streets and steep slopes, even when a detour exists nearby: take a public lift up and walk downhill, or take a flat street that is slightly longer.
+Google does have a "wheelchair accessible" mode, but it is designed for wheelchairs, works only where Google has data, and cannot prefer going downhill over going uphill.
 
-Родитель узнаёт об этом уже на маршруте: как велосипедист на шоссейнике, который оказался на гравийном склоне. Дальше остаются плохие варианты: нести коляску по ступеням, разворачиваться или идти по проезжей части.
-Опыт таких прогулок приводит к тому, что родители заранее отказываются от простых планов: кофе, поход в гости, прогулка в другой район. Сегодня обходные пути такие: спросить в родительском чате, позвонить, нести коляску на руках или не пойти.
+The parent finds out mid-route, like a cyclist on a road bike who ends up on a gravel slope. The remaining options are all bad: carry the stroller up the steps, turn back, or walk in the road.
+After a few such walks, parents start giving up simple plans in advance: a coffee, a visit to friends, a walk in another neighbourhood. Today's workarounds are: ask in a parents' chat, call ahead, carry the stroller, or not go.
 
-Родители с маленькими детьми выбраны основной аудиторией, потому что их много и они появляются постоянно. Туристы с чемоданами и люди с временной травмой получают ту же пользу попутно.
+Parents of young children are the primary audience because there are many of them and new ones arrive all the time. Tourists with suitcases and people with a temporary injury get the same benefit along the way.
 
 ### Key Decisions
 
-- **Основная аудитория: родители с колясками.** Колясочники, туристы и люди с травмой получают пользу попутно, но решения принимаются под родителей. (session-settled: user-directed — chosen over «все маломобильные группы одинаково»: родителей много, и они появляются постоянно.) Governs R1, R3.
-- **Некоммерческий проект.** (session-settled: user-directed — chosen over поиска модели монетизации: монетизация годами блокировала запуск, важнее сделать.)
-- **Компаньон рядом с Google Maps, а не своя карта и не встраивание.** Google Maps не позволяет встраивать чужой код в своё приложение. Своя карта означала бы переучивать людей. (session-settled: user-approved — chosen over своего приложения с картой, наполнения данных самого Google и расширения для браузера: привычки не меняются, кода меньше.) Governs R1, R2, R6.
-- **Город запуска: Лиссабон.** Небольшая столица с сильным рельефом, большим числом детей и туристов. (session-settled: user-directed — выбрано пользователем как место первой проверки.) Governs R4.
-- **Первая версия учитывает лестницы и уклоны, а узкие тротуары и покрытие пока только собирает.** Для лестниц и уклонов есть надёжные открытые данные, для ширины тротуаров и покрытия их почти нет. (session-settled: user-approved — chosen over «все четыре препятствия сразу через анализ фото нейросетью» и «только лестницы и уклоны без сбора отметок»: быстрее запуск, а данные о ширине и покрытии копятся с первого дня.) Governs R4, R5, R9.
-- **Режим работы: построить путь и проверить маршрут Google.** (session-settled: user-approved — chosen over «только проверка маршрута Google» и «сразу подборка проверенных путей с сообществом»: закрывает боль «есть ли другой сценарий», подборка вырастет из отметок позже.) Governs R2, R6, R7, R10.
-- **Честность важнее покрытия.** Если подходящего пути нет, помощник говорит об этом прямо и не выдаёт плохой путь за хороший. (session-settled: user-directed — пользователь выбрал честный ответ.) Governs R7.
-- **Своей пошаговой навигации нет.** Навигацию ведёт Google Maps. Риск того, что Google перестроит маршрут, закрывается предупреждением и быстрым перестроением, а не своим навигатором. Governs R8.
+- **Primary audience: parents with strollers.** Wheelchair users, tourists and people with injuries benefit along the way, but decisions are made for parents. (session-settled: user-directed — chosen over "all reduced-mobility groups equally": there are many parents and new ones arrive all the time.) Governs R1, R3.
+- **Non-commercial project.** (session-settled: user-directed — chosen over finding a monetization model: monetization blocked the launch for years; building it matters more.)
+- **A companion next to Google Maps, not its own map and not an embed.** Google Maps does not allow third-party code inside its app. An own map would mean re-teaching people. (session-settled: user-approved — chosen over an own map app, contributing data to Google itself, and a browser extension: habits stay the same and there is less code.) Governs R1, R2, R6.
+- **Launch city: Lisbon.** A small capital with steep terrain and many children and tourists. (session-settled: user-directed — chosen by the user as the place for the first test.) Governs R4.
+- **The first version handles stairs and slopes, and only collects narrow sidewalks and bad surfaces.** Reliable open data exists for stairs and slopes; for sidewalk width and surface there is almost none. (session-settled: user-approved — chosen over "all four obstacles at once through LLM photo analysis" and "stairs and slopes only, with no mark collection": a faster launch, and width and surface data accumulate from day one.) Governs R4, R5, R9.
+- **Operating mode: build a route and check a Google route.** (session-settled: user-approved — chosen over "check the Google route only" and "a curated community collection of routes first": it addresses the "is there another way" pain, and the collection can grow out of the marks later.) Governs R2, R6, R7, R10.
+- **Honesty over coverage.** If no suitable route exists, the assistant says so plainly and never presents a bad route as a good one. (session-settled: user-directed — the user chose the honest answer.) Governs R7.
+- **No turn-by-turn navigation of its own.** Google Maps does the navigation. The risk that Google reroutes is covered by a warning and fast rerouting, not by an own navigator. Governs R8.
 
 ### Actors
 
-- A1. Родитель с коляской: присылает место или маршрут, идёт по пути, оставляет отметки.
-- A2. Помощник: строит или проверяет путь, объясняет препятствия, принимает отметки.
-- A3. Google Maps: показывает путь и ведёт по нему. Помощник им не управляет.
+- A1. Parent with a stroller: sends a place or a route, walks the route, leaves marks.
+- A2. Assistant: builds or checks the route, explains obstacles, accepts marks.
+- A3. Google Maps: shows the route and navigates along it. The assistant does not control it.
 
 ### Requirements
 
-**Запрос и ответ**
+**Request and reply**
 
-- R1. Родитель может прислать помощнику ссылку на место из Google Maps, адрес или название места и получить ответ без установки отдельного приложения с картой.
-- R2. Родитель может прислать маршрут из Google Maps, и помощник проверяет именно его: называет лестницы и крутые участки на нём с ориентирами («через 4 минуты — лестница на улице X») и предлагает обход, если он есть. Если препятствий не найдено, помощник говорит «по открытым данным лестниц и крутых участков не нашёл», а не обещает, что их нет.
-- R3. Помощник отвечает на языке, на котором его спросили.
+- R1. A parent can send the assistant a Google Maps place link, an address, or a place name and get an answer without installing a separate map app.
+- R2. A parent can send a route from Google Maps and the assistant checks that route: it names the stairs and steep sections on it with landmarks ("in 4 minutes — stairs on street X") and suggests a detour if one exists. If no obstacles are found, the assistant says "according to open data, I found no stairs or steep sections" rather than promising there are none.
+- R3. The assistant replies in the language it was asked in.
 
-**Построение пути**
+**Building the route**
 
-- R4. Для места назначения в Лиссабоне помощник строит пеший путь без лестниц и без участков круче порога, допуская публичные лифты и фуникулёры как часть пути. Использовать можно только лифты и фуникулёры из проверенного вручную списка (вход без ступенек, коляску пускают, сейчас работает). Каждый ответ с подъёмом называет пеший запасной вариант на случай, если подъём закрыт.
-- R11. Если начало или конец пути за пределами Лиссабона, помощник прямо говорит, что пока работает только в Лиссабоне, и путь не строит.
-- R5. При выборе между путями помощник предпочитает спуск подъёму и согласен на более длинный путь ради более ровного. В ответе он сообщает, на сколько минут путь длиннее варианта Google.
-- R6. Подходящий путь отдаётся ссылкой, которая открывает его в Google Maps по точкам помощника, а не по кратчайшему пути Google. Путь через лифт или фуникулёр отдаётся отдельными пешими ссылками до и после подъёма, а сам подъём описан текстом.
-- R10. Перед отправкой помощник проверяет путь, который Google Maps на самом деле проложит по этой ссылке, тем же способом, что и в R2. Если на нём остаётся лестница или крутой участок, помощник не называет путь подходящим и отвечает по R7.
-- R7. Если пути без лестниц и крутых подъёмов нет, помощник говорит об этом прямо и предлагает лучший из оставшихся вариантов с конкретным препятствием (например, «есть путь с одной лестницей из 6 ступенек») или другой способ добраться (трамвай, лифт, такси).
+- R4. For a destination in Lisbon, the assistant builds a walking route with no stairs and no sections steeper than the threshold, allowing public lifts and funiculars as part of the route. Only lifts and funiculars from a manually verified list may be used (step-free entrance, strollers allowed, currently running). Every answer that includes a lift names a walking fallback in case it is closed.
+- R11. If the start or end of the route is outside Lisbon, the assistant says plainly that it only works in Lisbon for now, and does not build a route.
+- R5. When choosing between routes, the assistant prefers going downhill to going uphill and accepts a longer route for a flatter one. The answer says how many minutes longer the route is than Google's.
+- R6. A suitable route is returned as a link that opens it in Google Maps through the assistant's waypoints, not along Google's shortest route. A route through a lift or funicular is returned as separate walking links before and after the ride, with the ride itself described in text.
+- R10. Before sending, the assistant checks the route Google Maps will actually draw for that link, in the same way as in R2. If stairs or a steep section remain on it, the assistant does not call the route suitable and answers per R7.
+- R7. If there is no route without stairs and steep climbs, the assistant says so plainly and offers the best remaining option with its specific obstacle (for example, "there is a route with one flight of 6 steps") or another way to get there (tram, lift, taxi).
 
-**Сход с маршрута**
+**Leaving the route**
 
-- R8. Вместе с путём помощник предупреждает, что при сходе с маршрута Google поведёт своим путём. Родитель может прислать текущую геопозицию и получить новый путь от неё.
+- R8. Together with the route, the assistant warns that if the parent leaves the route, Google will reroute its own way. The parent can send their current location and get a new route from there.
 
-**Отметки родителей**
+**Parent marks**
 
-- R9. На месте или сразу после родитель может одним касанием или фотографией отметить место как «узко» или «плохое покрытие». Место подтверждается одной кнопкой («здесь» или «выбрать на карте»). Первая версия собирает эти отметки, но ещё не учитывает их при построении пути.
+- R9. On the spot or right after, a parent can mark a place as "narrow" or "bad surface" with one tap or a photo. The place is confirmed with one button ("here" or "pick on map"). The first version collects these marks but does not yet use them for routing.
 
-**Данные родителей**
+**Parents' data**
 
-- R12. Отметка хранит только место, тип и примерную дату, без аккаунта отправителя в мессенджере. Из фото удаляются метаданные, фото остаются только для внутренней проверки и никуда не передаются. При первой отметке родителю об этом сообщают.
-- R13. Точки старта, адреса назначения и живая геопозиция используются только для текущего ответа и короткого окна перестроения по R8. Во внешние сервисы построения маршрутов они передаются без идентификатора пользователя.
+- R12. A mark stores only the place, the type and an approximate date, without the sender's messenger account. Metadata is stripped from photos; photos are kept only for internal review and are not shared anywhere. The parent is told this at their first mark.
+- R13. Start points, destination addresses and live location are used only for the current answer and the short rerouting window of R8. They are passed to external routing services without a user identifier.
 
 ### Key Flows
 
-- F1. Путь к месту
-  - **Trigger:** родитель присылает ссылку на кафе или адрес друзей.
+- F1. Route to a place
+  - **Trigger:** a parent sends a link to a café or a friend's address.
   - **Actors:** A1, A2, A3
-  - **Steps:** помощник уточняет точку старта, если её нет (геопозиция или адрес); строит путь; отвечает кратким описанием (время, разница с Google, лифты по пути) и ссылкой в Google Maps; добавляет предупреждение о сходе с маршрута.
-  - **Outcome:** родитель идёт по пути без лестниц или заранее знает, что такого нет.
+  - **Steps:** the assistant asks for the start point if it is missing (location or address); builds the route; replies with a short description (time, difference from Google, lifts along the way) and a Google Maps link; adds the warning about leaving the route.
+  - **Outcome:** the parent walks a stair-free route or knows in advance that none exists.
   - **Covered by:** R1, R4, R5, R6, R7, R8, R10, R11, R13
-- F2. Проверка маршрута Google
-  - **Trigger:** родитель присылает маршрут, который построил Google Maps.
+- F2. Checking a Google route
+  - **Trigger:** a parent sends a route built by Google Maps.
   - **Actors:** A1, A2
-  - **Steps:** помощник находит лестницы и крутые участки на маршруте; называет их с ориентирами; предлагает обход или путь из F1.
-  - **Outcome:** родитель знает, где на маршруте Google будет тяжело.
+  - **Steps:** the assistant finds stairs and steep sections on the route; names them with landmarks; suggests a detour or the route from F1.
+  - **Outcome:** the parent knows where the Google route will be hard.
   - **Covered by:** R2, R5, R6
-- F3. Отметка на месте
-  - **Trigger:** родитель сталкивается с узким тротуаром или плохим покрытием.
+- F3. Marking a spot
+  - **Trigger:** a parent runs into a narrow sidewalk or a bad surface.
   - **Actors:** A1, A2
-  - **Steps:** родитель отправляет отметку или фото; помощник одной кнопкой подтверждает место и тип; помощник подтверждает приём.
-  - **Outcome:** отметка сохранена для будущих версий.
+  - **Steps:** the parent sends a mark or a photo; the assistant confirms the place and type with one button each; the assistant confirms the mark was saved.
+  - **Outcome:** the mark is saved for future versions.
   - **Covered by:** R9, R12
 
 ### Acceptance Examples
 
-- AE1. **Covers R4, R5, R6, R10.** **Given** кратчайший путь Google от Baixa до кафе наверху идёт по лестнице, а рядом есть публичный лифт, **when** родитель присылает ссылку на кафе, **then** помощник предлагает путь через лифт, говорит, на сколько минут он длиннее, и даёт пешую ссылку до лифта, текстовый шаг «поднимитесь на лифте» и пешую ссылку от лифта, каждая из которых прошла проверку по R10.
-- AE2. **Covers R7.** **Given** к месту в Алфаме нельзя пройти без лестниц и крутых подъёмов, **when** родитель спрашивает путь, **then** помощник прямо говорит, что пути без препятствий нет, и называет лучший вариант с конкретным препятствием или трамвай, такси, лифт.
-- AE3. **Covers R2.** **Given** маршрут Google содержит одну лестницу, **when** родитель присылает этот маршрут, **then** помощник называет лестницу с ориентиром и предлагает обход, если он есть.
-- AE4. **Covers R8.** **Given** родитель свернул не туда, и Google перестроил путь через ступени, **when** родитель присылает текущую геопозицию, **then** помощник присылает новый путь от неё.
-- AE5. **Covers R3.** **Given** турист пишет на английском, **when** он спрашивает путь, **then** весь ответ на английском.
+- AE1. **Covers R4, R5, R6, R10.** **Given** Google's shortest route from Baixa to a café uphill goes up stairs and a public lift is nearby, **when** the parent sends the café link, **then** the assistant offers the route via the lift, says how many minutes longer it is, and gives a walking link to the lift, a text step "take the lift up" and a walking link from the lift, each of which passed the R10 check.
+- AE2. **Covers R7.** **Given** a place in Alfama cannot be reached without stairs or steep climbs, **when** the parent asks for a route, **then** the assistant says plainly that there is no obstacle-free route and names the best option with its specific obstacle, or a tram, taxi or lift.
+- AE3. **Covers R2.** **Given** a Google route contains one staircase, **when** the parent sends that route, **then** the assistant names the staircase with a landmark and suggests a detour if one exists.
+- AE4. **Covers R8.** **Given** the parent took a wrong turn and Google rerouted through steps, **when** the parent sends their current location, **then** the assistant sends a new route from there.
+- AE5. **Covers R3.** **Given** a tourist writes in English, **when** they ask for a route, **then** the whole answer is in English.
 
 ### Success Criteria
 
-- Автор и около 10 знакомых родителей в Лиссабоне в течение месяца пользуются помощником в реальных поездках.
-- Хотя бы раз за этот месяц помощник уводит родителя от лестницы или крутого подъёма, на который иначе привёл бы Google.
-- Родители не находят случаев, когда помощник назвал путь подходящим, а на нём оказалась лестница. Такие случаи важнее всех остальных ошибок.
+- The author and about 10 parents she knows in Lisbon use the assistant on real trips for a month.
+- At least once that month, the assistant steers a parent away from stairs or a steep climb that Google would otherwise have sent them up.
+- Parents find no cases where the assistant called a route suitable and it turned out to have stairs. Such cases matter more than any other error.
 
 ### Scope Boundaries
 
 **Deferred for later**
 
-- Учёт ширины тротуаров и покрытия при построении пути: после того как наберутся отметки по R9 или появится анализ фото.
-- Доступность внутри заведений: туалет, пеленальный столик, вход без ступенек.
-- Подборка проверенных родителями путей и прогулок с сообществом (вариант «Komoot для колясок»).
-- Другие города.
-- Выбор режима «бодрый» или «осторожный» с разными порогами уклона.
-- Передача отметок родителей в OpenStreetMap, чтобы данные пережили проект.
+- Using sidewalk width and surface in routing: once R9 marks accumulate or photo analysis appears.
+- Accessibility inside venues: toilet, changing table, step-free entrance.
+- A collection of parent-verified routes and walks with a community (a "Komoot for strollers" option).
+- Other cities.
+- A choice between "brisk" and "careful" modes with different slope thresholds.
+- Contributing parent marks to OpenStreetMap so the data outlives the project.
 
 **Outside this product's identity**
 
-- Своя карта и своя пошаговая навигация.
-- Монетизация.
-- Строгие требования инвалидных колясок (точная высота бордюров, ширина проёмов) как основной сценарий.
+- An own map and own turn-by-turn navigation.
+- Monetization.
+- Strict wheelchair requirements (exact curb heights, doorway widths) as the main scenario.
 
 ### Dependencies / Assumptions
 
-- Данные OpenStreetMap по лестницам в центре Лиссабона достаточно полны, чтобы обещание R4 выполнялось. Не проверено.
-- Открытые карты высот дают уклон улиц с точностью, достаточной для порога «слишком круто». Не проверено.
-- Публичные лифты и фуникулёры Лиссабона, их расположение, часы работы и пригодность для коляски можно собрать и поддерживать вручную. Фуникулёры после аварии на Glória в сентябре 2025 года надолго закрывали, поэтому статус работы нужно проверять. Не проверено.
-- Ссылка Google Maps с промежуточными точками удерживает путь достаточно близко к пути помощника. Число точек в ссылке ограничено (около 9, в мобильном браузере около 3). Между точками Google выбирает свой путь, поэтому нужна проверка по R10. Пешая ссылка не умеет проходить через лифт или фуникулёр.
-- Если Google сделает собственный режим для колясок, для некоммерческого проекта это успех, а не угроза.
+- OpenStreetMap stairs data in central Lisbon is complete enough for the R4 promise to hold. Not verified.
+- Open elevation data gives street slopes accurately enough for the "too steep" threshold. Not verified.
+- Lisbon's public lifts and funiculars, their locations, opening hours and stroller suitability can be collected and maintained by hand. Funiculars were closed for a long time after the Glória accident in September 2025, so their operating status needs checking. Not verified.
+- A Google Maps link with waypoints keeps the route close enough to the assistant's route. The number of waypoints in a link is limited (about 9, about 3 in a mobile browser). Between waypoints Google picks its own path, hence the R10 check. A walking link cannot go through a lift or funicular.
+- If Google launches its own stroller mode, that is a success for a non-commercial project, not a threat.
 
 ### Outstanding Questions
 
 **Gates on the author (not blocking planning)**
 
-- Завести Google Cloud биллинговый аккаунт с португальским адресом, чтобы действовали условия EEA (KTD4), и поставить дневной лимит запросов. Без этого U4 строится и тестируется на заглушке, но в пилот не выходит.
-- Завести бесплатную учётную запись на cdd.dgterritorio.gov.pt до начала U1: без неё не скачать модель рельефа MDT 2 м. Логин и пароль только в переменных окружения.
-- Завести ключ Google до U1: вызов computeRoutes в U1 обязателен (KTD4).
-- Завести бота в Telegram (BotFather), ключ Anthropic API с месячным лимитом расходов и небольшой сервер для пилота (U8).
+- Set up a Google Cloud billing account with a Portuguese address so the EEA terms apply (KTD4), and set a daily request cap. Without it U4 is built and tested against a stub but does not go into the pilot.
+- Create a free account at cdd.dgterritorio.gov.pt before U1 starts: without it the MDT 2 m elevation model cannot be downloaded. Login and password go in environment variables only.
+- Get the Google key before U1: the computeRoutes call in U1 is mandatory (KTD4).
+- Create the Telegram bot (BotFather), an Anthropic API key with a monthly spend limit, and a small server for the pilot (U8).
 
 **Deferred to Implementation**
 
-- Точные пороги уклона подбираются в U1 на маршрутах автора (стартовые значения в KTD9).
-- Читает ли GraphHopper подготовленный файл высот DGT напрямую или нужен свой загрузчик высот (KTD3).
+- The exact slope thresholds are tuned in U1 on the author's routes (starting values in KTD9).
+- Whether GraphHopper reads the prepared DGT elevation file directly or needs a custom elevation loader (KTD3).
 
 ### Sources / Research
 
-- Пешие маршруты без ступенек в Google Maps и отметки доступности мест: [blog.google](https://blog.google/company-news/outreach-and-initiatives/accessibility/making-daily-tasks-accessible/), [Android Authority](https://androidauthority.com/google-maps-wheelchair-accessible-routes-845961).
-- Google Maps Platform даёт API для своих карт, но не позволяет встраиваться в приложение Google Maps: [документация](https://developers.google.com/maps/documentation/javascript/libraries-open-source).
-- Открытые маршрутизаторы на данных OpenStreetMap: выбор сделан в KTD1, сравнение в `docs/research/2026-11-17-technical-research.md`.
+- Stair-free walking routes in Google Maps and place accessibility attributes: [blog.google](https://blog.google/company-news/outreach-and-initiatives/accessibility/making-daily-tasks-accessible/), [Android Authority](https://androidauthority.com/google-maps-wheelchair-accessible-routes-845961).
+- Google Maps Platform offers APIs for building your own maps but no way to extend the Google Maps app: [documentation](https://developers.google.com/maps/documentation/javascript/libraries-open-source).
+- Open routers on OpenStreetMap data: the choice is made in KTD1, the comparison is in `docs/research/2026-11-17-technical-research.md`.
 
 ---
 
@@ -176,61 +176,61 @@ Google Maps строит кратчайший пеший путь. В Лисса
 
 ### Key Technical Decisions
 
-- KTD1. **Маршрутизатор: свой GraphHopper на выгрузке OSM только по Лиссабону, с собственной моделью пешехода.** Лестницы запрещены полностью (приоритет 0), уклон ограничен отдельно для подъёма и спуска, подъём штрафуется сильнее спуска. Валхалла даёт только мягкие штрафы за ступени, а у OpenRouteService ограничение уклона не различает подъём и спуск и опирается на теги OSM, которых в Лиссабоне почти нет. Бесплатный облачный GraphHopper не принимает собственные модели, поэтому нужен свой сервер. Второй профиль «лестницы разрешены, но дорого» используется только для честного запасного варианта по R7. (session-settled: user-approved — chosen over облачного OpenRouteService и Валхаллы: только так можно запретить ступени и различать подъём и спуск, ценой сервера около €5 в месяц.) Governs R4, R5.
-- KTD2. **Лифты и фуникулёры склеиваются в коде приложения, а не рёбрами графа.** Приложение строит прямой путь и составные пути с одним или двумя открытыми лифтами подряд («до лифта A + A + от A до лифта B + B + до цели») и выбирает лучший. Два лифта подряд нужны для главного подъёма Baixa → Castelo (Fanqueiros → Madalena, затем Chão do Loureiro → Costa do Castelo). Список лифтов ведётся вручную в одном файле: координаты входа и выхода, часы, пригодность для коляски, дата последней проверки. Фуникулёры в OSM размечены как железная дорога, пешеходный маршрутизатор их не использует, а ручной список и так нужен для статуса работы. Governs R4, R6.
-- KTD3. **Уклоны считаются по лидарной модели рельефа DGT (2 м, CC BY 4.0), а не по глобальным 30-метровым моделям.** Copernicus 30 м включает здания и сглаживает короткие крутые улицы. Модель один раз режется по границе Лиссабона, переводится в формат, который читает GraphHopper, и тот же растр использует проверка маршрута (KTD4). Уклон сглаживается по окну 10–20 м, на мостах высота интерполируется. Если GraphHopper не прочитает файл, пишется свой загрузчик высот. (session-settled: user-approved — chosen over глобальных моделей 30 м: в узких улицах они дают неверные уклоны.) Governs R4.
-- KTD4. **Проверка пути Google (R10, R2) — через Routes API computeRoutes в пешем режиме, с сопоставлением линии маршрута с лестницами OSM и уклонами из KTD3.** Ссылка на маршрут Google не содержит линии, только точки, поэтому маршрут пересчитывается по тем же точкам. Работа под условиями EEA (биллинговый адрес в Португалии): линия маршрута не хранится, не рисуется на картах и не используется для улучшения OSM или графа; в ответ уходит только текстовый вердикт. Ставится дневной лимит запросов. Для своих ссылок помощник ставит не более 3 промежуточных точек на ссылку и, если проверка нашла любое препятствие (ступени или участок круче порога KTD9), сдвигает или добавляет точки и проверяет снова, не больше 3 попыток. Для R2 вердикт относится к маршруту, который Google строит по тем же точкам, и ответ так и говорит. Короткие ссылки `maps.app.goo.gl` раскрываются переходом по редиректам только на домены Google. Governs R2, R6, R10.
-- KTD5. **Канал пилота — Telegram-бот.** Бесплатно, без бизнес-регистрации, есть кнопка «отправить геопозицию» и кнопки под сообщением, номера телефонов не раскрываются. (session-settled: user-approved — chosen over WhatsApp Cloud API: регистрация бизнеса в Meta и плата за ответы сверх 1000 в месяц.) Governs R1, R8, R9.
-- KTD6. **Нейросеть только разбирает запрос и формулирует ответ; факты считает обычный код.** Claude Haiku 5.5 (`claude-haiku-5-5`) извлекает из свободного текста фиксированную структуру (что прислали, место, язык) и превращает готовый структурированный результат в текст на языке пользователя. Пути, уклоны, лестницы и статус лифтов в ответ подставляются из кода, нейросеть их не придумывает. Ссылки и координаты разбираются кодом до вызова нейросети. (session-settled: user-approved — chosen over свободной генерации ответа нейросетью: помощник не должен «додумывать» путь.) Governs R1, R3, R7.
-- KTD7. **Стек: Python 3.12, `uv`, `python-telegram-bot`, `httpx`, `shapely`, `rasterio`, SQLite, `pytest`; GraphHopper и бот запускаются через Docker Compose.** Один небольшой сервис и один процесс маршрутизатора проще всего держать на одном сервере.
-- KTD8. **Геокодирование: сначала ссылка Google, потом Nominatim с кэшем и не чаще 1 запроса в секунду, потом Photon как запасной вариант с опечатками; поиск ограничен рамкой Лиссабона.** Точка вне границы города даёт ответ по R11. Governs R1, R11.
-- KTD9. **Стартовые пороги уклона: подъём не круче 8%, спуск не круче 10%, подъём штрафуется вдвое сильнее спуска того же уклона.** Числа подбираются в U1 на маршрутах автора и хранятся в одном конфиге, общем для маршрутизатора и проверки. Governs R4, R5, R10.
-- KTD10. **Данные о людях живут коротко и без привязки к аккаунту.** Сессия разговора (последняя точка старта и назначения для R8) хранится в памяти процесса 30 минут. Координаты не пишутся в логи. Отметки лежат в SQLite с полями: точка, тип, месяц и год; без идентификатора Telegram. Из фото удаляются метаданные (EXIF), фото хранятся локально и никуда не выгружаются. Кому что уходит: маршрутизатор и Google получают только координаты; геокодеры — текст места и рамку Лиссабона; Claude Haiku — текст текущего сообщения и структуру фактов с названиями улиц, лифтов и мест. Идентификаторы Telegram (пользователя и чата) и сырые координаты старта никуда не передаются. Логгеры `httpx` и `httpcore` работают на уровне WARNING, иначе адреса, координаты и токен бота попадут в логи из URL запросов. Governs R9, R12, R13.
+- KTD1. **Router: self-hosted GraphHopper on a Lisbon-only OSM extract, with a custom pedestrian model.** Stairs are forbidden outright (priority 0), slope is capped separately for uphill and downhill, and uphill is penalised more than downhill. Valhalla only offers soft penalties for steps, and OpenRouteService's slope limit does not distinguish uphill from downhill and relies on OSM tags that Lisbon barely has. GraphHopper's free hosted plan does not accept custom models, so an own server is needed. A second profile, "stairs allowed but expensive", is used only for the honest fallback of R7. (session-settled: user-approved — chosen over hosted OpenRouteService and Valhalla: the only way to forbid steps and tell uphill from downhill, at the cost of a server of about €5 a month.) Governs R4, R5.
+- KTD2. **Lifts and funiculars are stitched in application code, not as graph edges.** The app builds the direct route plus composite routes with one or two open lifts in a row ("to lift A + A + from A to lift B + B + to the destination") and picks the best. Two lifts in a row are needed for the main climb Baixa → Castelo (Fanqueiros → Madalena, then Chão do Loureiro → Costa do Castelo). The lift list is kept by hand in one file: entrance and exit coordinates, hours, stroller suitability, date of last check. Funiculars are mapped in OSM as railways, which a pedestrian router does not use, and the manual list is needed anyway for operating status. Governs R4, R6.
+- KTD3. **Slopes come from DGT's LiDAR terrain model (2 m, CC BY 4.0), not from global 30 m models.** Copernicus 30 m includes buildings and smooths out short steep streets. The model is clipped once to the Lisbon boundary and converted to a format GraphHopper reads; the route check (KTD4) uses the same raster. Slope is smoothed over a 10–20 m window, and elevation is interpolated on bridges. If GraphHopper cannot read the file, a custom elevation loader is written. (session-settled: user-approved — chosen over global 30 m models: they give wrong slopes in narrow streets.) Governs R4.
+- KTD4. **Google route checks (R10, R2) use the Routes API computeRoutes in walking mode, matching the route polyline against OSM stairs and the KTD3 slopes.** A Google route link contains no polyline, only points, so the route is recomputed through the same points. The work runs under the EEA terms (billing address in Portugal): the polyline is not stored, not drawn on maps and not used to improve OSM or the graph; only a text verdict goes into the reply. A daily request cap is set. For its own links the assistant uses at most 3 waypoints per link and, if the check finds any obstacle (steps or a section steeper than the KTD9 threshold), moves or adds points and checks again, up to 3 attempts. For R2 the verdict covers the route Google builds through the same points, and the reply says so. Short `maps.app.goo.gl` links are expanded by following redirects to Google domains only. Governs R2, R6, R10.
+- KTD5. **Pilot channel: a Telegram bot.** Free, no business registration, a "send location" button and inline buttons, phone numbers are not exposed. (session-settled: user-approved — chosen over the WhatsApp Cloud API: Meta business registration and charges for replies beyond 1,000 a month.) Governs R1, R8, R9.
+- KTD6. **The LLM only parses the request and phrases the reply; regular code computes the facts.** Claude Haiku 5.5 (`claude-haiku-5-5`) extracts a fixed structure from free text (what was sent, the place, the language) and turns the finished structured result into text in the user's language. Routes, slopes, stairs and lift status are inserted into the reply from code; the LLM does not invent them. Links and coordinates are parsed by code before any LLM call. (session-settled: user-approved — chosen over free-form LLM generation of the reply: the assistant must not "make up" a route.) Governs R1, R3, R7.
+- KTD7. **Stack: Python 3.12, `uv`, `python-telegram-bot`, `httpx`, `shapely`, `rasterio`, SQLite, `pytest`; GraphHopper and the bot run via Docker Compose.** One small service and one router process are simplest to keep on one server.
+- KTD8. **Geocoding: first the Google link, then Nominatim with a cache and at most 1 request per second, then Photon as a typo-tolerant fallback; search is limited to the Lisbon bounding box.** A point outside the city triggers the R11 answer. Governs R1, R11.
+- KTD9. **Starting slope thresholds: uphill no steeper than 8%, downhill no steeper than 10%, uphill penalised twice as much as downhill of the same grade.** The numbers are tuned in U1 on the author's routes and kept in one config shared by the router and the check. Governs R4, R5, R10.
+- KTD10. **Personal data is short-lived and not tied to an account.** The conversation session (last start and destination, for R8) lives in process memory for 30 minutes. Coordinates are not written to logs. Marks live in SQLite with the fields: point, type, month and year; no Telegram identifier. EXIF metadata is stripped from photos; photos are stored locally and not uploaded anywhere. Who receives what: the router and Google get coordinates only; geocoders get the place text and the Lisbon bounding box; Claude Haiku gets the current message text and the fact structure with street, lift and place names. Telegram identifiers (user and chat) and raw start coordinates are never sent anywhere. The `httpx` and `httpcore` loggers run at WARNING, otherwise addresses, coordinates and the bot token would leak into logs from request URLs. Governs R9, R12, R13.
 
 ### High-Level Technical Design
 
-Компоненты и потоки данных:
+Components and data flow:
 
 ```mermaid
 flowchart TB
-  TG[Telegram] --> BOT[Бот: обработчики и сессии]
-  BOT --> PARSE[Разбор запроса: ссылки, геокодер, Claude Haiku]
-  BOT --> PLAN[Планировщик пути]
-  PLAN --> GH[GraphHopper: OSM Лиссабона + рельеф DGT]
-  PLAN --> LIFTS[Файл лифтов и статусов]
-  PLAN --> LINK[Сборщик ссылок Google Maps]
-  LINK --> CHECK[Проверка пути]
+  TG[Telegram] --> BOT[Bot: handlers and sessions]
+  BOT --> PARSE[Request parsing: links, geocoder, Claude Haiku]
+  BOT --> PLAN[Route planner]
+  PLAN --> GH[GraphHopper: Lisbon OSM + DGT terrain]
+  PLAN --> LIFTS[Lift and status file]
+  PLAN --> LINK[Google Maps link builder]
+  LINK --> CHECK[Route check]
   CHECK --> ROUTES[Google Routes API]
-  CHECK --> STEPS[Лестницы OSM + растр рельефа DGT]
-  BOT --> REPLY[Ответ: факты из кода, текст от Claude Haiku]
-  BOT --> MARKS[(SQLite: анонимные отметки)]
+  CHECK --> STEPS[OSM stairs + DGT terrain raster]
+  BOT --> REPLY[Reply: facts from code, wording from Claude Haiku]
+  BOT --> MARKS[(SQLite: anonymous marks)]
 ```
 
-Путь к месту (F1) с проверкой ссылки, направляющий эскиз:
+Route to a place (F1) with link verification, a directional sketch:
 
 ```mermaid
 sequenceDiagram
-  participant P as Родитель
-  participant B as Бот
-  participant R as Планировщик
+  participant P as Parent
+  participant B as Bot
+  participant R as Planner
   participant G as Google Routes API
-  P->>B: ссылка на кафе
-  B->>P: кнопка «отправить геопозицию» (если нет старта)
-  P->>B: геопозиция
-  B->>R: старт, назначение
-  R->>R: прямой путь и пути через открытые лифты (GraphHopper)
-  R->>R: выбрать лучший, разрезать на пешие участки, ≤3 точки на участок
-  loop до 3 попыток на участок
-    R->>G: computeRoutes по тем же точкам
-    G-->>R: линия маршрута
-    R->>R: лестницы и уклоны на линии
+  P->>B: link to a café
+  B->>P: "send location" button (if no start)
+  P->>B: location
+  B->>R: start, destination
+  R->>R: direct route and routes via open lifts (GraphHopper)
+  R->>R: pick the best, split into walking legs, ≤3 points per leg
+  loop up to 3 attempts per leg
+    R->>G: computeRoutes through the same points
+    G-->>R: route polyline
+    R->>R: stairs and slopes on the polyline
   end
-  alt все участки чистые
-    R-->>B: путь, разница во времени, ссылки, шаг лифта
-  else осталась лестница или пути нет
-    R-->>B: честный ответ по R7 с конкретным препятствием
+  alt all legs clean
+    R-->>B: route, time difference, links, lift step
+  else stairs remain or no route
+    R-->>B: honest R7 answer with the specific obstacle
   end
-  B->>P: ответ + кнопка «перестроить отсюда»
+  B->>P: answer + "reroute from here" button
 ```
 
 ### Output Structure
@@ -244,7 +244,7 @@ stroller-routes-lisbon/
     stroller-model.json
     thresholds.toml
     lifts.yaml
-  data/                      # не в git: выгрузки OSM, рельеф, SQLite, фото
+  data/                      # not in git: OSM extracts, terrain, SQLite, photos
   scripts/
     fetch_osm.sh
     prepare_elevation.py
@@ -275,33 +275,33 @@ stroller-routes-lisbon/
 
 ### Assumptions
 
-- Данные OSM о лестницах в центре Лиссабона полные: 506 линий `highway=steps`, 80% с направлением (выборка Overpass от 2026-11-17). Проверяется в U1.
-- Линия computeRoutes по тем же точкам совпадает с путём, который рисует приложение Google Maps при нажатии ссылки в Telegram, и приложение сохраняет промежуточные точки. Проверяется в U1; расхождение — стоп-условие.
-- Условия Google Maps Platform для EEA действуют для биллингового аккаунта с португальским адресом, и проверка линии маршрута без отрисовки и хранения им соответствует.
-- Запрос линии маршрута оставляет вызов computeRoutes в тарифе Essentials (10 000 бесплатных в месяц). Не подтверждено; дневной лимит защищает от неожиданного счёта.
-- На пилоте не больше нескольких сотен запросов в день, одного процесса бота и одного GraphHopper на сервере за €5 хватает.
+- OSM stairs data in central Lisbon is complete: 506 `highway=steps` ways, 80% with a direction (Overpass sample from 2026-11-17). Checked in U1.
+- The computeRoutes polyline through the same points matches the route the Google Maps app draws when the link is tapped in Telegram, and the app keeps the waypoints. Checked in U1; a mismatch is a stop condition.
+- The Google Maps Platform EEA terms apply to a billing account with a Portuguese address, and checking a route polyline without drawing or storing it complies with them.
+- Requesting the polyline keeps a computeRoutes call in the Essentials tier (10,000 free a month). Not confirmed; the daily cap protects against an unexpected bill.
+- The pilot sees no more than a few hundred requests a day; one bot process and one GraphHopper on a €5 server are enough.
 
 ### Risks & Dependencies
 
-| Риск | Что делаем |
+| Risk | What we do |
 |---|---|
-| Google строит между точками путь со ступенями, и 3 точек не хватает | Проверка R10 с повторными попытками; в U1 измеряем, как часто это случается; при частых провалах останавливаемся по стоп-условию |
-| Рельеф DGT не читается GraphHopper | Свой загрузчик высот или предрасчёт уклонов по рёбрам (KTD3) |
-| Лифт закрылся без новостей | Дата проверки в файле лифтов, ежемесячная сверка в `docs/ops/pilot.md`, пеший запасной вариант в каждом ответе (R4) |
-| Условия Google изменятся | Проверка изолирована в одном модуле `verify/google_routes.py`; при запрете бот переходит на ответ без проверки с явной оговоркой, решение за автором |
-| Nominatim заблокирует за частые запросы | Кэш, 1 запрос в секунду, Photon как запасной |
+| Google builds a path with steps between the waypoints, and 3 points are not enough | R10 check with retries; U1 measures how often this happens; frequent failures trigger the stop condition |
+| GraphHopper cannot read the DGT terrain | A custom elevation loader or precomputed slopes per edge (KTD3) |
+| A lift closes without notice | Check date in the lift file, a monthly review in `docs/ops/pilot.md`, a walking fallback in every answer (R4) |
+| Google's terms change | The check is isolated in one module, `verify/google_routes.py`; if it is no longer allowed, the bot switches to unverified answers with an explicit caveat; the author decides |
+| Nominatim blocks us for too many requests | Cache, 1 request per second, Photon as a fallback |
 
 ---
 
 ## Implementation Units
 
-### U1. Проверка рисков на маршрутах автора (точка «идём или нет»)
+### U1. Risk check on the author's routes (go/no-go gate)
 
-**Goal:** до любой работы над ботом выяснить, находит ли маршрутизатор пути без лестниц, совпадающие с опытом автора, и удерживают ли их ссылки Google Maps.
+**Goal:** before any work on the bot, find out whether the router finds stair-free routes that match the author's experience and whether Google Maps links hold them.
 
-**Requirements:** R4, R5, R6, R10; Success Criteria; Dependencies / Assumptions о данных OSM и рельефе.
+**Requirements:** R4, R5, R6, R10; Success Criteria; Dependencies / Assumptions on OSM and terrain data.
 
-**Dependencies:** нет.
+**Dependencies:** none.
 
 **Files:**
 - `scripts/fetch_osm.sh`
@@ -314,28 +314,28 @@ stroller-routes-lisbon/
 - `docs/research/spike-results.md`
 
 **Approach:**
-1. Скачать выгрузку OSM по Португалии и вырезать рамку Лиссабона; скачать тайлы рельефа DGT 2 м по той же рамке и подготовить их для GraphHopper (KTD3).
-2. Запустить GraphHopper локально в Docker с моделью из KTD1 и порогами из KTD9.
-3. Автор вписывает 3–4 знакомых маршрута в `spike/routes.yaml`: откуда, куда, где на самом деле лестницы и каким путём он ходит с коляской.
-4. Скрипт для каждого маршрута строит путь, режет его на ссылки с ≤3 промежуточными точками (KTD4) и печатает: длину, время, максимальный уклон, ссылку Google Maps и ссылку на просмотр пути в OSM.
-5. Для каждой ссылки скрипт вызывает computeRoutes по тем же точкам и печатает найденные на линии Google лестницы и крутые участки (вызов обязателен, KTD4).
-6. Автор отправляет ссылки себе в Telegram, нажимает их на телефоне и записывает: сохранило ли приложение Google Maps промежуточные точки, совпадает ли нарисованный путь с линией computeRoutes, с путём помощника и с его опытом.
-7. На маршрутах с известными лестницами калибруется правило совпадения с лестницами (ширина буфера и доля длины лестницы, U4).
-8. Пороги уклона подстраиваются, итог записывается в `docs/research/spike-results.md`: что совпало, что нет, какие пороги выбраны, решение «идём или нет».
+1. Download the Portugal OSM extract and clip the Lisbon bounding box; download the DGT 2 m terrain tiles for the same box and prepare them for GraphHopper (KTD3).
+2. Run GraphHopper locally with the KTD1 model and the KTD9 thresholds.
+3. The author writes 3–4 familiar routes into `spike/routes.yaml`: from, to, where the stairs actually are, and which way she walks with a stroller.
+4. For each route the script builds the path, splits it into links with ≤3 waypoints (KTD4), and prints: length, time, maximum slope, the Google Maps link and a link to view the path on OSM.
+5. For each link the script calls computeRoutes through the same points and prints the stairs and steep sections found on Google's polyline (the call is mandatory, KTD4).
+6. The author sends the links to herself in Telegram, taps them on her phone, and records: whether the Google Maps app kept the waypoints, whether the drawn route matches the computeRoutes polyline, the assistant's route and her experience.
+7. On routes with known stairs, the stair-matching rule is calibrated (buffer width and share of the stair length, U4).
+8. Slope thresholds are adjusted, and the outcome is written to `docs/research/spike-results.md`: what matched, what did not, which thresholds were chosen, and the go/no-go decision.
 
-**Execution note:** это исследовательский юнит: проверка ручная, код в `spike/` можно выбросить. Ценность юнита — записанный результат и выбранные пороги.
+**Execution note:** this is an exploratory unit: the check is manual and the code in `spike/` can be thrown away. The value of the unit is the recorded result and the chosen thresholds.
 
-**Test expectation:** none -- исследовательский прогон; доказательство — `docs/research/spike-results.md` с вердиктом автора по каждому маршруту.
+**Test expectation:** none -- an exploratory run; the proof is `docs/research/spike-results.md` with the author's verdict on each route.
 
-**Verification:** для каждого из 3–4 маршрутов записано, совпал ли путь помощника с опытом автора, сохранило ли приложение Google Maps точки при нажатии из Telegram и совпал ли нарисованный путь с линией computeRoutes; есть явное решение «идём» или «стоп».
+**Verification:** for each of the 3–4 routes it is recorded whether the assistant's route matched the author's experience, whether the Google Maps app kept the waypoints when tapped from Telegram, and whether the drawn route matched the computeRoutes polyline; there is an explicit "go" or "stop" decision.
 
-### U2. Каркас проекта и данные для маршрутизатора
+### U2. Project skeleton and router data
 
-**Goal:** воспроизводимо собрать граф Лиссабона с рельефом, список лестниц для проверки и файл лифтов, и поднять GraphHopper одной командой.
+**Goal:** reproducibly build the Lisbon graph with terrain, the stairs list for the check and the lift file, and start GraphHopper with one command.
 
 **Requirements:** R4, R5; KTD1, KTD2, KTD3, KTD7, KTD9.
 
-**Dependencies:** U1 (решение «идём» и выбранные пороги).
+**Dependencies:** U1 ("go" decision and chosen thresholds).
 
 **Files:**
 - `pyproject.toml`
@@ -347,23 +347,23 @@ stroller-routes-lisbon/
 - `tests/test_config.py`
 
 **Approach:**
-1. Перенести из U1 скрипты подготовки данных и конфиги, которые оправдались.
-2. `scripts/export_steps.py` выгружает лестницы OSM (линии `highway=steps`) в файл геометрии для проверки в U4.
-3. `config/lifts.yaml` заполняется по открытым данным города и EMEL: для каждого лифта вход, выход, часы, «коляска можно», «работает», дата проверки. На 2026-11-19 работают городские лифты Baixa → Castelo (Fanqueiros → Madalena, Chão do Loureiro → Costa do Castelo), Sé, Portas do Sol и фуникулёр Graça; Santa Justa, Glória, Bica и Lavra закрыты.
-4. `src/stroller/config.py` читает пороги, лифты и ключи из одного места; ключи только из переменных окружения.
-5. `data/` в `.gitignore`.
+1. Carry over from U1 the data-preparation scripts and configs that proved themselves.
+2. `scripts/export_steps.py` exports OSM stairs (`highway=steps` ways) to a geometry file for the U4 check.
+3. `config/lifts.yaml` is filled from the city's and EMEL's open data: for each lift its entrance, exit, hours, "stroller OK", "running", and check date. As of 2026-11-19 the running ones are the city lifts Baixa → Castelo (Fanqueiros → Madalena, Chão do Loureiro → Costa do Castelo), Sé, Portas do Sol and the Graça funicular; Santa Justa, Glória, Bica and Lavra are closed.
+4. `src/stroller/config.py` reads thresholds, lifts and keys from one place; keys come from environment variables only.
+5. `data/` is in `.gitignore`.
 
 **Test scenarios:**
-- Файл лифтов с лифтом без даты проверки или без признака «коляска можно» не загружается, ошибка называет лифт.
-- Лифт с `работает: нет` не попадает в список доступных.
-- Лифт вне часов работы (например, Sé в 22:00) не попадает в список доступных на это время.
-- Пороги из `config/thresholds.toml` одинаково видны маршрутизатору и проверке.
+- A lift file with a lift missing its check date or its "stroller OK" flag does not load, and the error names the lift.
+- A lift with `running: no` is not in the available list.
+- A lift outside its hours (for example, Sé at 22:00) is not in the available list at that time.
+- The thresholds in `config/thresholds.toml` are seen identically by the router and the check.
 
-**Verification:** на чистой машине из README поднимаются GraphHopper и тесты; запрос пути через GraphHopper возвращает маршрут по Лиссабону.
+**Verification:** on a clean machine, GraphHopper and the tests come up from the README; a route request to GraphHopper returns a route in Lisbon.
 
-### U3. Планировщик пути с лифтами и честным отказом
+### U3. Route planner with lifts and honest refusal
 
-**Goal:** по старту и назначению вернуть лучший путь без лестниц и крутых подъёмов, с лифтами, или честный отказ с наименее плохим вариантом.
+**Goal:** from a start and destination, return the best route with no stairs and no steep climbs, using lifts, or an honest refusal with the least bad option.
 
 **Requirements:** R4, R5, R7, R11; F1; AE1, AE2; KTD1, KTD2, KTD8, KTD9.
 
@@ -379,28 +379,28 @@ stroller-routes-lisbon/
 - `tests/fixtures/graphhopper/`
 
 **Approach:**
-1. Клиент GraphHopper запрашивает путь в модели «коляска» и, отдельно, в модели «лестницы разрешены, но дорого» для честного запасного варианта.
-2. Для открытых в это время лифтов в радиусе 1,5 км от прямой старт–финиш строятся составные пути с одним или двумя лифтами подряд (KTD2); пара учитывается, только если пеший участок между лифтами сам проходим по модели «коляска».
-3. Лучший путь выбирается по времени с учётом штрафа за подъём (KTD9); разница во времени считается против обычного пешего пути без ограничений.
-4. Если подходящего пути нет, возвращается вариант с минимумом препятствий, где каждое названо: число ступеней или участок с уклоном, плюс подсказка «трамвай, лифт или такси» (R7).
-5. Точка вне рамки Лиссабона даёт результат «вне города» без построения (R11).
+1. The GraphHopper client requests a route in the "stroller" model and, separately, in the "stairs allowed but expensive" model for the honest fallback.
+2. For lifts open at that time within 1.5 km of the straight start–destination line, composite routes with one or two lifts in a row are built (KTD2); a pair counts only if the walking leg between the lifts is itself passable in the "stroller" model.
+3. The best route is chosen by time, including the uphill penalty (KTD9); the time difference is computed against an ordinary unrestricted walking route.
+4. If no suitable route exists, the option with the fewest obstacles is returned, each one named: the number of steps or a section with its slope, plus a "tram, lift or taxi" hint (R7).
+5. A point outside the Lisbon box gives an "outside the city" result without routing (R11).
 
-**Patterns to follow:** результат планировщика — структура с фактами (участки, лифты, препятствия, время), из которой потом собираются текст и ссылки; текста планировщик не пишет (KTD6).
+**Patterns to follow:** the planner's result is a structure of facts (legs, lifts, obstacles, time) from which the text and links are assembled later; the planner does not write text (KTD6).
 
 **Test scenarios:**
-- Covers AE1. Прямой путь идёт по лестнице, рядом открытый лифт: выбран путь через лифт, разница во времени больше нуля, шаг лифта назван.
-- Запрос из Baixa к Costa do Castelo: выбрана цепочка Fanqueiros → Madalena, затем Chão do Loureiro → Costa do Castelo, с двумя шагами лифта.
-- Тот же случай, что в AE1, но лифт закрыт: путь через лифт не предлагается, выбран ровный обход или честный отказ.
-- Covers AE2. Ни прямого пути, ни пути через лифт нет: результат «пути нет» и наименее плохой вариант с числом ступеней.
-- Два пути одинаковой длины, один с подъёмом 7%, другой со спуском 7%: выбран спуск.
-- Старт в Лиссабоне, финиш в Синтре: результат «вне города», GraphHopper не вызывается.
-- GraphHopper недоступен: ошибка «маршрутизатор недоступен», а не пустой путь, выданный за «пути нет».
+- Covers AE1. The direct route has stairs and an open lift is nearby: the route via the lift is chosen, the time difference is greater than zero, and the lift step is named.
+- A request from Baixa to Costa do Castelo: the chain Fanqueiros → Madalena, then Chão do Loureiro → Costa do Castelo is chosen, with two lift steps.
+- The same case as AE1 but the lift is closed: no route via the lift is offered; a flat detour or an honest refusal is chosen.
+- Covers AE2. Neither a direct route nor a route via a lift exists: the result is "no route" plus the least bad option with its number of steps.
+- Two routes of equal length, one with a 7% climb and one with a 7% descent: the descent is chosen.
+- Start in Lisbon, destination in Sintra: the result is "outside the city", and GraphHopper is not called.
+- GraphHopper is unavailable: the error "router unavailable", not an empty route presented as "no route".
 
-**Verification:** тесты на записанных ответах GraphHopper проходят; на 3–4 маршрутах из U1 планировщик даёт те же пути, что и спайк.
+**Verification:** tests on recorded GraphHopper responses pass; on the 3–4 routes from U1 the planner gives the same routes as the spike.
 
-### U4. Ссылки Google Maps и проверка пути Google
+### U4. Google Maps links and Google route verification
 
-**Goal:** превращать путь помощника в проверенные пешие ссылки и проверять присланный маршрут Google на лестницы и крутые участки.
+**Goal:** turn the assistant's route into verified walking links, and check a submitted Google route for stairs and steep sections.
 
 **Requirements:** R2, R6, R10; F2; AE1, AE3; KTD3, KTD4, KTD9.
 
@@ -418,33 +418,33 @@ stroller-routes-lisbon/
 - `tests/fixtures/google/`
 
 **Approach:**
-1. `links/build.py` режет путь на пешие участки по лифтам (по одной ссылке на каждый участок между лифтами) и выбирает для каждого не больше 3 промежуточных точек в местах, где путь помощника расходится с кратчайшим.
-2. `verify/checker.py` получает линию маршрута и находит: лестницы OSM, вдоль которых линия идёт (большая часть длины лестницы, стартово 50%, лежит в буфере около 10 м от линии и направление примерно совпадает; простая близость не считается), и участки с уклоном выше порога по растру DGT (окно сглаживания из KTD3). Буфер и доля калибруются в U1.
-3. `verify/google_routes.py` вызывает computeRoutes с теми же точками и пешим режимом и сразу отдаёт линию в проверку, ничего не сохраняя (KTD4).
-4. Цикл R10: если на линии Google нашлось любое препятствие (ступень или крутой участок), точка сдвигается к пути помощника и проверка повторяется, до 3 раз; если не вышло — результат «не удалось удержать путь», который бот отдаёт по R7.
-5. `links/parse.py` раскрывает `maps.app.goo.gl` только через редиректы на домены Google, достаёт старт, финиш, точки и режим; всё остальное — «не удалось прочитать ссылку».
-6. Для R2 пересчитанный маршрут Google проверяется тем же `checker`; «чисто» формулируется как «по открытым данным не нашёл» (R2).
+1. `links/build.py` splits the route into walking legs at lifts (one link per leg between lifts) and picks at most 3 waypoints per leg where the assistant's route departs from the shortest one.
+2. `verify/checker.py` takes a route polyline and finds: OSM stairs the line runs along (most of the stair's length, 50% to start with, lies within a buffer of about 10 m of the line and the bearing roughly matches; mere proximity does not count), and sections with a slope above the threshold from the DGT raster (smoothing window from KTD3). The buffer and share are calibrated in U1.
+3. `verify/google_routes.py` calls computeRoutes with the same points in walking mode and passes the polyline straight to the check, storing nothing (KTD4).
+4. The R10 loop: if any obstacle (a step or a steep section) is found on Google's polyline, a point is moved towards the assistant's route and the check repeats, up to 3 times; if that fails, the result is "could not hold the route", which the bot answers per R7.
+5. `links/parse.py` expands `maps.app.goo.gl` only through redirects to Google domains, and extracts the start, destination, waypoints and mode; anything else gives "could not read the link".
+6. For R2 the recomputed Google route is checked by the same `checker`; "clean" is phrased as "according to open data, found none" (R2).
 
 **Test scenarios:**
-- Covers AE1. Путь с лифтом даёт две пешие ссылки и шаг лифта; в каждой ссылке не больше 3 точек.
-- Линия, проходящая по записанной лестнице OSM, даёт препятствие «лестница» с примерным расстоянием от начала.
-- Линия, которая проходит мимо нижнего конца лестницы или пересекает её край, не пользуясь ею: препятствия нет.
-- Линия, параллельная лестнице и смещённая на 7 м (расхождение геометрии Google и OSM): препятствие «лестница».
-- Путь с двумя лифтами даёт три пешие ссылки и два шага лифта.
-- Первая проверка нашла крутой участок, после сдвига точки линия чистая: результат «проверено».
-- Линия на улице с уклоном 12% на 40 м при пороге 8% даёт препятствие «крутой подъём»; короткий скачок на 3 м из-за шума растра препятствием не считается.
-- Первая проверка нашла ступень, после сдвига точки линия чистая: результат «проверено», использована 2 попытка.
-- Три попытки подряд со ступенью: результат «не удалось удержать путь».
-- Covers AE3. Присланный маршрут Google с одной лестницей: препятствие названо, предложен обход из U3.
-- Чистый маршрут Google: вердикт «по открытым данным не нашёл».
-- Короткая ссылка, редиректящая на не-Google домен: переход не выполняется, ошибка «не удалось прочитать ссылку».
-- Ключ Google не задан: проверка возвращает «проверка недоступна», а бот не называет путь проверенным.
+- Covers AE1. A route with a lift gives two walking links and a lift step; each link has at most 3 points.
+- A line running along a recorded OSM staircase gives a "stairs" obstacle with its approximate distance from the start.
+- A line that passes the bottom end of a staircase or crosses its edge without using it: no obstacle.
+- A line parallel to a staircase and offset by 7 m (Google and OSM geometry diverging): a "stairs" obstacle.
+- A route with two lifts gives three walking links and two lift steps.
+- The first check finds a steep section, and after moving a point the line is clean: the result is "verified".
+- A line on a street with a 12% slope over 40 m with an 8% threshold gives a "steep climb" obstacle; a 3 m spike from raster noise is not an obstacle.
+- The first check finds a step, and after moving a point the line is clean: the result is "verified", on the second attempt.
+- Three attempts in a row with a step: the result is "could not hold the route".
+- Covers AE3. A submitted Google route with one staircase: the obstacle is named and a detour from U3 is offered.
+- A clean Google route: the verdict "according to open data, found none".
+- A short link redirecting to a non-Google domain: the redirect is not followed, and the error is "could not read the link".
+- No Google key configured: the check returns "verification unavailable", and the bot does not call the route verified.
 
-**Verification:** тесты на записанных ответах Routes API и фрагментах растра проходят; ни один модуль не пишет линию маршрута Google на диск.
+**Verification:** tests on recorded Routes API responses and raster fragments pass; no module writes a Google route polyline to disk.
 
-### U5. Понимание запроса и текст ответа
+### U5. Understanding the request and wording the reply
 
-**Goal:** понять, что прислал родитель, и превратить факты планировщика в короткий ответ на его языке.
+**Goal:** understand what the parent sent, and turn the planner's facts into a short answer in their language.
 
 **Requirements:** R1, R3, R7, R11; AE5; KTD6, KTD8.
 
@@ -459,25 +459,25 @@ stroller-routes-lisbon/
 - `tests/bot/test_replies.py`
 
 **Approach:**
-1. Порядок разбора: ссылка Google (U4) → координаты → нейросеть извлекает тип запроса, текст места и язык → геокодер (KTD8).
-2. Несколько совпадений по названию дают до 3 вариантов кнопками.
-3. Язык ответа: язык текста; если текста нет (только ссылка) — язык прошлых сообщений, потом язык интерфейса Telegram, потом английский.
-4. `replies.py` собирает ответ из фактов: время, разница с Google, лифты, препятствия, ссылки, предупреждение о сходе с маршрута (R8); нейросеть только переводит и связывает фразы, числа и названия подставляются из фактов.
+1. Parsing order: Google link (U4) → coordinates → the LLM extracts the request type, place text and language → geocoder (KTD8).
+2. Several matches for a name give up to 3 options as buttons.
+3. Reply language: the language of the text; if there is no text (only a link), the language of earlier messages, then the Telegram interface language, then English.
+4. `replies.py` assembles the answer from facts: time, difference from Google, lifts, obstacles, links, and the leaving-the-route warning (R8); the LLM only translates and links the phrases, while numbers and names are inserted from the facts.
 
 **Test scenarios:**
-- «Кафе Fábrica Coffee Roasters, Rua das Flores» на русском даёт запрос места с языком RU.
-- Covers AE5. Сообщение на английском: весь ответ на английском, числа совпадают с фактами планировщика.
-- Только ссылка от нового пользователя с интерфейсом Telegram на португальском: ответ на португальском.
-- Название с тремя совпадениями в Лиссабоне: три кнопки, путь не строится до выбора.
-- Ответ нейросети, в котором число минут не совпадает с фактом: ответ отклоняется и собирается по шаблону без нейросети.
-- Nominatim отвечает ошибкой: используется Photon.
-- Запрос к нейросети не содержит идентификаторов Telegram и сырых координат старта (KTD10).
+- "Кафе Fábrica Coffee Roasters, Rua das Flores" in Russian gives a place request with language RU.
+- Covers AE5. A message in English: the whole answer is in English, and the numbers match the planner's facts.
+- Only a link, from a new user whose Telegram interface is in Portuguese: the answer is in Portuguese.
+- A name with three matches in Lisbon: three buttons, and no route is built until one is chosen.
+- An LLM answer whose minute count does not match the facts: the answer is rejected and assembled from a template without the LLM.
+- Nominatim returns an error: Photon is used.
+- The LLM request contains no Telegram identifiers and no raw start coordinates (KTD10).
 
-**Verification:** тесты проходят на записанных ответах нейросети и геокодеров; в собранных ответах нет чисел и названий, которых нет в фактах.
+**Verification:** tests pass on recorded LLM and geocoder responses; assembled answers contain no numbers or names that are not in the facts.
 
-### U6. Telegram-бот: путь, проверка маршрута, перестроение
+### U6. Telegram bot: route, route check, rerouting
 
-**Goal:** провести родителя через сценарии F1 и F2 в Telegram одной рукой.
+**Goal:** guide a parent through F1 and F2 in Telegram, one-handed.
 
 **Requirements:** R1, R2, R8, R11, R13; F1, F2; AE4; KTD5, KTD10.
 
@@ -491,25 +491,25 @@ stroller-routes-lisbon/
 - `tests/bot/test_session.py`
 
 **Approach:**
-1. При первом контакте бот коротко сообщает, что делает и каким сервисам уходит текст запроса и точки (Google, Anthropic, сервисы OpenStreetMap) без привязки к аккаунту (R13). Сообщение о хранении отметок показывается при первой отметке (R12, U7).
-2. Нет точки старта — кнопка «отправить геопозицию» и вариант «написать адрес».
-3. Ответ с путём содержит кнопку «перестроить отсюда», которая запрашивает текущую геопозицию одним нажатием (R8).
-4. Сессия (старт, назначение, язык) в памяти, живёт 30 минут, координаты не логируются, логгеры `httpx` и `httpcore` на уровне WARNING (KTD10).
-5. Ошибки маршрутизатора, геокодера и Google превращаются в честное «сейчас не могу проверить», а не в непроверенный путь.
+1. At first contact the bot briefly says what it does and which services receive the request text and points (Google, Anthropic, OpenStreetMap services), without linking them to an account (R13). The notice about how marks are stored is shown at the first mark (R12, U7).
+2. No start point: a "send location" button and a "type an address" option.
+3. A route answer has a "reroute from here" button that requests the current location with one tap (R8).
+4. The session (start, destination, language) lives in memory for 30 minutes, coordinates are not logged, and the `httpx` and `httpcore` loggers run at WARNING (KTD10).
+5. Router, geocoder and Google errors become an honest "I can't check right now", not an unverified route.
 
 **Test scenarios:**
-- Covers F1. Ссылка на кафе без старта → кнопка геопозиции → геопозиция → ответ с путём, ссылками и кнопкой «перестроить отсюда».
-- Covers AE4. Через 10 минут после ответа нажата «перестроить отсюда» с новой геопозицией: новый путь от неё к тому же назначению.
-- Та же кнопка через 40 минут: бот просит заново прислать назначение, старых координат нет.
-- Covers F2. Присланная ссылка на маршрут Google: ответ с найденными препятствиями или «по открытым данным не нашёл».
-- Адрес вне Лиссабона: ответ «пока только Лиссабон» (R11).
-- В логах всех логгеров (включая `httpx`) на рабочем уровне после полного сценария нет координат, адресов и токена бота.
+- Covers F1. A café link with no start → location button → location → an answer with the route, links and the "reroute from here" button.
+- Covers AE4. 10 minutes after the answer, "reroute from here" is tapped with a new location: a new route from there to the same destination.
+- The same button after 40 minutes: the bot asks for the destination again; the old coordinates are gone.
+- Covers F2. A submitted Google route link: an answer with the obstacles found, or "according to open data, found none".
+- An address outside Lisbon: the answer "Lisbon only for now" (R11).
+- After a full scenario, the logs of all loggers (including `httpx`) at production level contain no coordinates, addresses or bot token.
 
-**Verification:** тесты обработчиков на поддельных обновлениях Telegram проходят; ручной прогон в тестовом боте по сценарию AE1.
+**Verification:** handler tests on fake Telegram updates pass; a manual run in a test bot through the AE1 scenario.
 
-### U7. Анонимные отметки родителей
+### U7. Anonymous parent marks
 
-**Goal:** дать родителю одной кнопкой отметить «узко» или «плохое покрытие» на месте и хранить отметку без привязки к человеку.
+**Goal:** let a parent mark "narrow" or "bad surface" on the spot with one button, and store the mark without linking it to a person.
 
 **Requirements:** R9, R12; F3; KTD10.
 
@@ -522,26 +522,26 @@ stroller-routes-lisbon/
 - `tests/bot/test_marks_flow.py`
 
 **Approach:**
-1. Отметку начинает кнопка в меню или присланное фото.
-2. Место подтверждается кнопкой «здесь» (кнопка Telegram с запросом геопозиции) или «выбрать на карте»: у Telegram нет кнопки выбора точки, поэтому бот одной строкой подсказывает отправить точку через «Скрепка → Геопозиция» и сдвинуть метку; следующая геопозиция в сценарии отметки принимается как место. Тип — кнопками «узко» и «плохое покрытие».
-3. В SQLite пишутся точка, тип, месяц и год; идентификатор Telegram не пишется (KTD10).
-4. Из фото удаляются метаданные перед сохранением в `data/photos/`; фото связаны с отметкой, а не с человеком.
-5. При первой отметке бот один раз сообщает, что и как хранится.
+1. A mark starts from a menu button or a sent photo.
+2. The place is confirmed with a "here" button (a Telegram button that requests the location) or "pick on map": Telegram has no point-picker button, so the bot says in one line to send a point via "Attach → Location" and drag the pin; the next location message in the mark flow is taken as the place. The type is chosen with "narrow" and "bad surface" buttons.
+3. SQLite stores the point, type, month and year; the Telegram identifier is not stored (KTD10).
+4. Photo metadata is stripped before saving to `data/photos/`; photos are linked to the mark, not to the person.
+5. At the first mark the bot says once what is stored and how.
 
 **Test scenarios:**
-- Covers F3. Фото без координат → кнопка «здесь» с геопозицией → тип «узко»: в базе одна запись с точкой, типом и месяцем.
-- В записи и в файле фото нет идентификатора Telegram и нет EXIF с GPS.
-- Отметка без подтверждённого места не сохраняется.
-- После «выбрать на карте» присланная через вложение геопозиция сохраняется как точка отметки.
-- Сообщение о хранении данных показывается только при первой отметке.
+- Covers F3. A photo without coordinates → "here" button with location → type "narrow": one record in the database with the point, type and month.
+- Neither the record nor the photo file contains a Telegram identifier or EXIF with GPS.
+- A mark without a confirmed place is not saved.
+- After "pick on map", a location sent as an attachment is saved as the mark's point.
+- The data-storage notice is shown only at the first mark.
 
-**Verification:** тесты проходят; выгрузка таблицы отметок не содержит полей, по которым можно найти человека.
+**Verification:** tests pass; an export of the marks table has no fields that could identify a person.
 
-### U8. Запуск пилота
+### U8. Pilot launch
 
-**Goal:** запустить бота и маршрутизатор на сервере для автора и ~10 родителей и описать, как их поддерживать.
+**Goal:** run the bot and the router on a server for the author and ~10 parents, and describe how to maintain them.
 
-**Requirements:** Success Criteria; R4 (актуальность лифтов); KTD4, KTD7.
+**Requirements:** Success Criteria; R4 (lifts kept up to date); KTD4, KTD7.
 
 **Dependencies:** U6, U7.
 
@@ -551,32 +551,32 @@ stroller-routes-lisbon/
 - `README.md`
 
 **Approach:**
-1. Docker Compose поднимает GraphHopper с готовым графом и бота; данные и SQLite в постоянном томе.
-2. `docs/ops/pilot.md`: какие ключи нужны и где их взять, как поставить дневной лимит Google и месячный лимит расходов Anthropic, как ежемесячно сверять `config/lifts.yaml`, как пересобрать граф при обновлении OSM, что делать, если родитель сообщил о лестнице, которой не было в ответе.
-3. README: локальный запуск и тесты.
+1. Docker Compose starts GraphHopper with the prebuilt graph and the bot; data and SQLite live in a persistent volume.
+2. `docs/ops/pilot.md`: which keys are needed and where to get them, how to set the Google daily cap and the Anthropic monthly spend limit, how to review `config/lifts.yaml` monthly, how to rebuild the graph when OSM updates, and what to do if a parent reports stairs that were not in the answer.
+3. README: local setup and tests.
 
-**Execution note:** в основном конфигурация и запуск: доказательство — живой ответ бота на сервере, а не юнит-тесты.
+**Execution note:** mostly configuration and launch: the proof is a live answer from the bot on the server, not unit tests.
 
-**Test expectation:** none -- конфигурация развёртывания; проверяется ручным запуском.
+**Test expectation:** none -- deployment configuration; verified by a manual launch.
 
-**Verification:** бот на сервере отвечает на маршрут из U1 так же, как локально; после перезапуска сервера граф и отметки на месте.
+**Verification:** the bot on the server answers the U1 routes the same way as locally; after a server restart, the graph and marks are still there.
 
 ---
 
 ## Verification Contract
 
-- `uv run pytest` — все тесты U2–U7 проходят без сети: GraphHopper, Routes API, геокодеры и нейросеть подменяются записанными ответами из `tests/fixtures/`.
-- `uv run ruff check` — без ошибок.
-- Ручная проверка: результат U1 записан в `docs/research/spike-results.md` с решением «идём»; в тестовом Telegram-боте пройдены сценарии AE1–AE5.
-- Поиск по коду не находит записи линии маршрута Google на диск и записи координат в логи.
+- `uv run pytest` — all U2–U7 tests pass without network: GraphHopper, the Routes API, geocoders and the LLM are replaced by recorded responses from `tests/fixtures/`.
+- `uv run ruff check` — no errors.
+- Manual check: the U1 result is recorded in `docs/research/spike-results.md` with a "go" decision; scenarios AE1–AE5 are walked through in a test Telegram bot.
+- A code search finds no writes of a Google route polyline to disk and no coordinates written to logs.
 
 ---
 
 ## Definition of Done
 
-- U1 завершён решением «идём»; иначе работа остановлена по стоп-условию с отчётом.
-- U2–U8 реализованы, каждый с выполненным пунктом Verification.
-- Все проверки Verification Contract выполнены.
-- Каждое требование R1–R13 закрыто хотя бы одним юнитом или тестом.
-- В репозитории нет кода брошенных попыток, кроме явно помеченного `spike/`.
-- Бот работает на сервере пилота, `docs/ops/pilot.md` описывает ключи, лимиты и ежемесячную сверку лифтов.
+- U1 is finished with a "go" decision; otherwise work stops per the stop condition, with a report.
+- U2–U8 are implemented, each with its Verification satisfied.
+- All Verification Contract checks pass.
+- Every requirement R1–R13 is covered by at least one unit or test.
+- The repository has no code from abandoned attempts, except the clearly marked `spike/`.
+- The bot runs on the pilot server, and `docs/ops/pilot.md` covers keys, limits and the monthly lift review.
