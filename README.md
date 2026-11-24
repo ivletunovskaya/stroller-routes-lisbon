@@ -1,37 +1,31 @@
 # Stroller Routes Lisbon
 
-Помощник для родителей с колясками в Лиссабоне. Он подсказывает, как дойти до места без лестниц и изнуряющих подъёмов, или честно говорит, что такого пути нет.
+A helper for parents with strollers in Lisbon. It tells you how to get somewhere without stairs or exhausting climbs, or honestly says that no such route exists.
 
-*A helper for parents with strollers in Lisbon: a walking route with no stairs and no punishing climbs, or an honest "there is no such route". English summary below.*
+## Why
 
-## Зачем
+Google Maps picks the shortest walking route, and in Lisbon that route often goes up staircase streets and steep slopes, even when there is a detour nearby: take a public lift up and walk downhill, or take a flat street that is a little longer. Parents find out mid-walk, and after a few of those walks they start skipping a coffee, a visit to friends, or a walk in another neighbourhood.
 
-Google Maps ведёт кратчайшим путём, а в Лиссабоне он часто идёт по лестницам-улицам и крутым склонам, хотя рядом есть обход: подняться на городском лифте и спуститься с горы или пройти по ровной улице чуть длиннее. Родители узнают об этом уже в пути, а потом заранее отказываются от кофе, похода в гости или прогулки в другой район.
+## How it will work
 
-## Как это будет работать
+It is not a separate map. It is a Telegram assistant that works alongside Google Maps:
 
-Это не отдельная карта, а помощник рядом с Google Maps, бот в Telegram:
+- send it a link to a café or an address, and get a route with no stairs and no steep climbs (using the city's public lifts) plus a link that opens that route in Google Maps;
+- send it a Google Maps route, and get the spots where it has stairs or a steep section, with a way around them;
+- if there is no obstacle-free route, it says so plainly and offers the least bad option;
+- parents can mark "narrow" or "bad surface" with one tap, and those marks are collected anonymously.
 
-- присылаешь ссылку на кафе или адрес, получаешь путь без лестниц и крутых подъёмов (с городскими лифтами) и ссылку, которая открывает этот путь в Google Maps;
-- присылаешь маршрут из Google Maps, получаешь список мест на нём, где будет лестница или крутой участок, и обход;
-- если пути без препятствий нет, помощник прямо так и говорит и предлагает наименее плохой вариант;
-- родители могут одним нажатием отметить «узко» или «плохое покрытие», и эти отметки копятся анонимно.
+The project is non-commercial. The first version covers Lisbon only.
 
-Проект некоммерческий. Первая версия только для Лиссабона.
+## Status
 
-## Статус
+Planning. No code yet. The first step is a risk check on a few real routes: does the router find stair-free routes, and do Google Maps links hold them?
 
-Идёт планирование. Код ещё не написан. Первый шаг — проверка рисков на нескольких реальных маршрутах: находит ли маршрутизатор пути без лестниц и удерживают ли их ссылки Google Maps.
+## Documents
 
-## Документы
+- [Plan: requirements and technical plan](docs/plans/2026-11-17-1612-feat-stroller-routes-lisbon-plan.md)
+- [Technical research: routing engines, terrain, lifts, Google, Telegram](docs/research/2026-11-17-technical-research.md)
 
-- [План: требования и технический план](docs/plans/2026-11-17-1612-feat-stroller-routes-lisbon-plan.md)
-- [Техническое исследование: маршрутизаторы, рельеф, лифты, Google, Telegram](docs/research/2026-11-17-technical-research.md)
+## How it is made
 
-## Как сделано
-
-Идею, требования, технический план и их ревью я прорабатываю вместе с Claude Code и навыками [Compound Engineering](https://github.com/EveryInc/compound-engineering-plugin) от Every: `ce-brainstorm` → `ce-doc-review` → `ce-plan` → `ce-work`.
-
-## English summary
-
-Google Maps' shortest walking route in Lisbon often climbs stairs and steep streets, even when a flat detour or a public lift exists. Parents learn this mid-walk and end up skipping trips. This project is a non-commercial Telegram assistant that works alongside Google Maps: send it a place or a Google route, and it returns a stair-free, low-slope route (using Lisbon's public lifts) as a Google Maps link, or flags the stairs on your route, or says honestly that no such route exists. Routing uses self-hosted GraphHopper on OpenStreetMap data with Portugal's LiDAR terrain model. Status: planning; the first step is a risk check on real routes.
+I'm working out the idea, requirements, technical plan and their reviews together with Claude Code and Every's [Compound Engineering](https://github.com/EveryInc/compound-engineering-plugin) skills: `ce-brainstorm` → `ce-doc-review` → `ce-plan` → `ce-work`.
