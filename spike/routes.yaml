@@ -15,3 +15,17 @@ trips:
       Mouraria/Alfama; the stroller way is the city lifts
       Fanqueiros -> Madalena -> Chão do Loureiro -> Costa do Castelo.
       (Lifts are not part of the router yet; expect a long detour or no route.)
+
+  - name: rossio-to-camoes
+    from: [38.71390, -9.13950]   # Rossio, south side
+    to: [38.71072, -9.14327]     # Praça Luís de Camões
+    notes: >
+      Example trip up to Chiado. Stair streets (Calçada do Carmo and others) are the
+      short way; Rua do Carmo / Rua Garrett is the usual slope.
+
+  - name: comercio-to-se
+    from: [38.70792, -9.13652]   # Praça do Comércio, east side
+    to: [38.70985, -9.13300]     # Sé (Lisbon Cathedral)
+    notes: >
+      Example trip with a moderate climb. Small stair passages through the old town
+      are the short way; Rua da Prata / Rua de São Julião / Rua Augusto Rosa is the street way.

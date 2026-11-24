@@ -41,11 +41,31 @@ GraphHopper 11.1 only reads elevation grids of about 30 m or coarser (SRTM/HGT, 
 
 Option 1 fits the current Python stack and is the suggested next step. Lifts are not in the router yet (they belong to a later unit), so the castle trip cannot show the lift route either way.
 
+## Finding 4: a route that stops short must be reported as "no route"
+
+GraphHopper snaps the destination to the nearest street the profile may use. When the real destination is only reachable by stairs or a steep climb, it silently snaps elsewhere: the "stroller route" to the castle entrance ended **166 m short**, on a different street. Shown to a parent, that would be a route that never arrives, which breaks the honesty principle (R7). The script now treats a start or end more than 40 m off as the honest "no route" answer. The real planner (U3) needs the same rule.
+
+## Finding 5: first Google checks (key working, 2026-11-24)
+
+| Trip | Stroller route | Google with our waypoints |
+|---|---|---|
+| Praça da Figueira → Castelo | does not reach the castle without lifts (end 166 m off) | not meaningful: with 0–3 waypoints Google kept using 1–6 staircases |
+| Rossio → Praça Luís de Camões | none within the 8% cap on the 90 m terrain | not run |
+| Praça do Comércio → Sé | 656 m, 9 min (+2 min), no stairs | holds with 0 waypoints: Google's own route has no stairs either |
+
+Also learned:
+- Waypoints placed far from the trip ends make Google wander: on the castle trip, adding waypoints *added* staircases. The script now adds waypoints one by one where Google strays furthest from our route, re-checking each time.
+- The Google check currently covers stairs only. Slopes on Google's line need the DGT raster.
+- Chiado (Rua do Carmo) comes out "too steep" on the coarse terrain although parents push strollers up it. Thresholds can only be tuned on real trips with real terrain.
+
+None of these trips is a real test yet: they are examples picked without local knowledge. The go/no-go needs the author's own trips.
+
 ## Still to do
 
 - [ ] 3–4 real trips from the author in `spike/routes.yaml`, with where the stairs actually are and which way she walks with a stroller.
 - [ ] DGT account → download the MDT 2 m tiles for Lisbon → rerun with better elevation and tune the slope thresholds.
-- [ ] Google Maps Platform key → for each trip, check whether the link with ≤3 waypoints keeps Google on our route (computeRoutes + map matching).
+- [x] Google Maps Platform key set up; the check runs (computeRoutes + map matching).
+- [ ] For each real trip, check whether the link with ≤3 waypoints keeps Google on our route.
 - [ ] The author taps each link inside Telegram and records whether the Google Maps app keeps the waypoints and draws the same route.
 - [ ] Go / no-go decision.
 

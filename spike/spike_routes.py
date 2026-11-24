@@ -37,6 +37,8 @@ ROOT = Path(__file__).resolve().parent.parent
 GH_URL = os.environ.get("GRAPHHOPPER_URL", "http://localhost:8989")
 ROUTES_API = "https://routes.googleapis.com/directions/v2:computeRoutes"
 MAX_WAYPOINTS = 3
+# How far a route may start or end from the requested point before it counts as not reaching it.
+SNAP_LIMIT_M = 40.0
 
 THRESHOLDS = tomllib.loads((ROOT / "config" / "thresholds.toml").read_text())
 
@@ -340,6 +342,32 @@ def write_geojson(name: str, routes: dict[str, Route]) -> Path:
     return path
 
 
+def pin_to_google(client: httpx.Client, key: str, start, end, ours: Route, names: dict[str, str]) -> None:
+    """Add waypoints one at a time where Google strays furthest from our route,
+    re-checking Google's actual route after each, up to MAX_WAYPOINTS."""
+    our_line = ours.line
+    waypoints: list[tuple[float, float]] = []
+    while True:
+        g_coords, g_dist = google_route_line(client, key, start, end, waypoints)
+        g_line = line_m(g_coords)
+        stairs = stairs_by_matching(client, g_coords)
+        street_stairs = {i for i in stairs if i in names} if stairs is not None else None
+        gap = our_line.hausdorff_distance(g_line)
+        print(
+            f"google, {len(waypoints)} waypoints: {g_dist:.0f} m, max gap {gap:.0f} m, "
+            f"stairs: {describe_stairs(stairs, names)}"
+        )
+        if street_stairs == set() or len(waypoints) == MAX_WAYPOINTS:
+            break
+        # The point of our route that Google's line is furthest from.
+        far = max(ours.coords[1:-1], key=lambda c: g_line.distance(Point(to_m(*c))))
+        waypoints.append((far[1], far[0]))
+        waypoints.sort(key=lambda p: our_line.project(Point(to_m(p[1], p[0]))))
+    verdict = "HOLDS" if street_stairs == set() else "DOES NOT HOLD"
+    print(f"verdict       : link {verdict} the stair-free route")
+    print(f"google link   : {google_link(start, end, waypoints)}")
+
+
 def main() -> None:
     trips = yaml.safe_load((ROOT / "spike" / "routes.yaml").read_text())["trips"]
     names = {s.osm_id: s.name for s in load_stairs()}
@@ -362,6 +390,18 @@ def main() -> None:
             if not ours:
                 print("stroller route: NONE within the limits (honest 'no route' case)")
                 continue
+            # GraphHopper snaps start and end to the nearest street the profile may use.
+            # When the real destination is only reachable by stairs or a steep climb, it
+            # silently snaps somewhere else, and the route stops short of where the parent
+            # wants to go. That must be reported as "no route", never as a route.
+            miss_start = math.dist(to_m(start[1], start[0]), to_m(*ours.coords[0]))
+            miss_end = math.dist(to_m(end[1], end[0]), to_m(*ours.coords[-1]))
+            if max(miss_start, miss_end) > SNAP_LIMIT_M:
+                print(
+                    f"stroller route: does NOT reach the trip (start off by {miss_start:.0f} m, "
+                    f"end off by {miss_end:.0f} m) -> honest 'no route' case"
+                )
+                continue
             up, down = steepest(ours)
             flag = "  <-- above the uphill limit" if up > max_up else ""
             print(
@@ -372,18 +412,12 @@ def main() -> None:
             if foot:
                 print(f"extra time vs ordinary walk: {(ours.time_s - foot.time_s) / 60:+.0f} min")
 
-            waypoints = pick_waypoints(ours, foot)
-            print(f"google link ({len(waypoints)} waypoints): {google_link(start, end, waypoints)}")
-
-            if google_key:
-                g_coords, g_dist = google_route_line(client, google_key, start, end, waypoints)
-                gap = ours.line.hausdorff_distance(line_m(g_coords))
-                print(
-                    f"google draws  : {g_dist:.0f} m, max gap from our route {gap:.0f} m, "
-                    f"stairs: {describe_stairs(stairs_by_matching(client, g_coords), names)}"
-                )
-            else:
+            if not google_key:
+                waypoints = pick_waypoints(ours, foot)
+                print(f"google link ({len(waypoints)} waypoints): {google_link(start, end, waypoints)}")
                 print("google check  : skipped (set GOOGLE_MAPS_API_KEY to run it)")
+            else:
+                pin_to_google(client, google_key, start, end, ours, names)
 
             routes = {"stroller": ours} | ({"foot": foot} if foot else {})
             print(f"geometry      : {write_geojson(name, routes).relative_to(ROOT)}")
