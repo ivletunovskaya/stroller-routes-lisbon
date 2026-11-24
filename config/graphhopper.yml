@@ -1,0 +1,38 @@
+# GraphHopper config for the Lisbon risk check.
+# Run from the repository root (see spike/README.md).
+graphhopper:
+  datareader.file: data/lisbon.osm.pbf
+  graph.location: data/graph-cache
+  custom_models.directory: config
+
+  # Elevation. Starts with the public CGIAR/SRTM model so the check can run
+  # before the DGT LiDAR model is downloaded; switch to the DGT model then.
+  graph.elevation.provider: cgiar
+  graph.elevation.cache_dir: data/elevation-cache
+  graph.elevation.dataaccess: MMAP
+
+  graph.encoded_values: foot_access, foot_priority, foot_average_speed, foot_road_access, hike_rating, mtb_rating, country, average_slope, max_slope, road_class, road_environment, osm_way_id
+
+  profiles:
+    # Ordinary walking, used as the baseline that Google would roughly take.
+    - name: foot
+      custom_model_files: [foot.json]
+    # No stairs, capped slopes, climbs cost more than descents.
+    - name: stroller
+      custom_model_files: [foot.json, stroller-model.json]
+
+  profiles_ch: []
+  profiles_lm: []
+
+  import.osm.ignored_highways: motorway,trunk
+  prepare.min_network_size: 50
+
+server:
+  application_connectors:
+    - type: http
+      port: 8989
+      bind_host: localhost
+  admin_connectors:
+    - type: http
+      port: 8990
+      bind_host: localhost

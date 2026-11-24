@@ -1,0 +1,20 @@
+# Slope thresholds shared by the router model and the route check.
+# Starting values; tuned during the risk check on real routes.
+
+[slope]
+# Percent grade. Steeper sections are forbidden for strollers.
+max_uphill = 8.0
+max_downhill = 10.0
+# Above this grade a climb starts costing extra. Descents cost half as much.
+soft_uphill = 4.0
+soft_downhill = 6.0
+
+[stairs_match]
+# A staircase counts as used by a route when this share of its length
+# lies within the buffer around the route line and the bearings roughly agree.
+buffer_m = 10.0
+min_share = 0.5
+max_bearing_diff_deg = 35.0
+# Both ends of the staircase must be near the route, and the route must cover
+# at least this share of the staircase length between them.
+min_span = 0.7
