@@ -2,7 +2,7 @@
 
 Status: **in progress**. The automated part is done. The part that needs real trips, the DGT terrain model and a Google key is still open (see "Still to do").
 
-Setup: GraphHopper 11.1 running locally on the OSM extract of Lisbon (Geofabrik, downloaded 2026-11-24), with a `foot` profile as the ordinary-walk baseline and a `stroller` profile that forbids stairs and caps slopes (`config/stroller-model.json`, thresholds in `config/thresholds.toml`). Elevation for now: CGIAR/SRTM (about 90 m grid).
+Setup: GraphHopper 11.1 running locally on the OSM extract of Lisbon (Geofabrik, downloaded 2026-11-24), with a `foot` profile as the ordinary-walk baseline and a `stroller` profile that forbids stairs and caps slopes (`config/stroller-model.json`, thresholds in `config/thresholds.toml`). Elevation: CGIAR/SRTM (about 90 m) until 2026-11-24, DGT LiDAR from 2026-11-25 (see Finding 6).
 
 ## Finding 1: stairs data is rich
 
@@ -60,10 +60,29 @@ Also learned:
 
 None of these trips is a real test yet: they are examples picked without local knowledge. The go/no-go needs the author's own trips.
 
+## Finding 6: with DGT terrain the router sees the hills (2026-11-25)
+
+The author downloaded 106 DGT MDT 2 m tiles (1 × 1 km each, July 2024 survey) covering Lisbon from Belém to Olivais. `scripts/prepare_elevation.py` resamples them into the one-arc-second HGT tile GraphHopper reads (SRTM fills the strip west of the DGT tiles), and keeps the full 2 m model for slope checks in our own code. Two gotchas: GraphHopper's HGT provider only reads `<cache_dir>/N38W010.hgt.zip`, and when the file is missing it silently treats the whole city as flat.
+
+Steepest climb and descent below are measured on the 2 m model over a 15 m window. Google's route counts as holding ours when it uses no street stairs and is at most 2 points steeper than our route.
+
+| Trip | Ordinary walk | Stroller route | Google with our waypoints |
+|---|---|---|---|
+| Praça da Figueira → Castelo | 1,143 m, 14 min, +100%, 1 staircase | **none** (true without the city lifts) | — |
+| Rossio → Praça Luís de Camões | 647 m, 8 min, +37%, 3 staircases | 3,353 m, **44 min** (+36), +10% | holds with 2 waypoints (no stairs, +10%) |
+| Praça do Comércio → Sé | 556 m, 7 min, +101%, 1 staircase | 627 m, 8 min (+2), +11% | holds with 2 waypoints; without them Google has no stairs but a **+20%** stretch |
+
+What this says:
+- **The terrain model matters.** On SRTM the castle hill looked climbable and Chiado unreachable; on DGT the castle is honestly unreachable without lifts, and Chiado is reachable by a long detour.
+- **The Google link mechanism works on these trips.** Two waypoints were enough to keep Google on the stair-free, gentler route in both cases where one exists.
+- **Slope checks catch what stair checks miss.** Google's own route to the Sé has no stairs but a +20% climb; with stairs-only checking it would have been passed as fine.
+- **The thresholds are not settled.** An 8% cap turns Rossio → Chiado into a 44-minute detour. Whether parents would rather push up Rua do Carmo, and how steep a short ramp is acceptable (our routes still show +10–11% over 15 m), can only come from real trips.
+
 ## Still to do
 
 - [ ] 3–4 real trips from the author in `spike/routes.yaml`, with where the stairs actually are and which way she walks with a stroller.
-- [ ] DGT account → download the MDT 2 m tiles for Lisbon → rerun with better elevation and tune the slope thresholds.
+- [x] DGT MDT 2 m tiles downloaded and wired in (GraphHopper grid + 2 m slope check).
+- [ ] Tune the slope thresholds on real trips.
 - [x] Google Maps Platform key set up; the check runs (computeRoutes + map matching).
 - [ ] For each real trip, check whether the link with ≤3 waypoints keeps Google on our route.
 - [ ] The author taps each link inside Telegram and records whether the Google Maps app keeps the waypoints and draws the same route.

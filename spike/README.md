@@ -10,6 +10,14 @@ curl -sSL -o data/graphhopper-web-11.1.jar https://github.com/graphhopper/graphh
 ./scripts/fetch_osm.sh
 ```
 
+Elevation: download the DGT MDT 2 m GeoTIFF tiles for Lisbon from cdd.dgterritorio.gov.pt (free account) into `data/dgt/`, then:
+
+```bash
+uv run scripts/prepare_elevation.py
+```
+
+Put the Google key in `.env` (`GOOGLE_MAPS_API_KEY=...`, the file is git-ignored) and load it with `set -a; source .env; set +a`.
+
 ## Run
 
 Start GraphHopper from the repository root (the first start builds the graph in under a minute):

@@ -5,11 +5,14 @@ graphhopper:
   graph.location: data/graph-cache
   custom_models.directory: config
 
-  # Elevation. Starts with the public CGIAR/SRTM model so the check can run
-  # before the DGT LiDAR model is downloaded; switch to the DGT model then.
-  graph.elevation.provider: cgiar
-  graph.elevation.cache_dir: data/elevation-cache
-  graph.elevation.dataaccess: MMAP
+  # Elevation: DGT's 2 m LiDAR terrain model resampled to a one-arc-second HGT tile
+  # (built by scripts/prepare_elevation.py), with SRTM filling gaps outside the DGT tiles.
+  graph.elevation.provider: hgt
+  graph.elevation.cache_dir: data/elevation-hgt
+  graph.elevation.interpolate: bilinear
+  graph.elevation.long_edge_sampling_distance: 20
+  graph.elevation.edge_smoothing: moving_average
+  graph.elevation.edge_smoothing.moving_average.window_size: 40
 
   graph.encoded_values: foot_access, foot_priority, foot_average_speed, foot_road_access, hike_rating, mtb_rating, country, average_slope, max_slope, road_class, road_environment, osm_way_id
 
