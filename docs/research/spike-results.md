@@ -78,6 +78,17 @@ What this says:
 - **Slope checks catch what stair checks miss.** Google's own route to the Sé has no stairs but a +20% climb; with stairs-only checking it would have been passed as fine.
 - **The thresholds are not settled.** An 8% cap turns Rossio → Chiado into a 44-minute detour. Whether parents would rather push up Rua do Carmo, and how steep a short ramp is acceptable (our routes still show +10–11% over 15 m), can only come from real trips.
 
+## Measurement log
+
+Raw observations from the session runs, kept so that later documents can cite them.
+
+- Praça da Figueira → Castelo, coarse SRTM terrain, first waypoint method (points farthest from the ordinary walk): Google with 0 waypoints 1,357 m and 1 staircase; with 3 waypoints 1,710 m and 7 staircases; the first waypoint was about 35 m from the start.
+- Same trip, proximity rule: the stroller route was flagged as using staircase `w731800499`, an 8 m metro entrance (`highway=steps`, `level=0;-1`) on the square; GraphHopper's route details showed no steps on that route. Map matching instead reported the single staircase the ordinary walk really used, `w244600206`.
+- Calibration run (150 routes): of the staircases routes really used, none carried `indoor`, `level` or `conveying`; most false hits of the geometric rule did.
+- DGT terrain in GraphHopper, ordinary walk Praça da Figueira → Castelo: elevation along the route rises from 10 m to 95 m.
+- DGT terrain, Google route checks: Rossio → Praça Luís de Camões, Google with 0 waypoints 642 m, 4 staircases, steepest +50%; with 2 waypoints 3,235 m, no stairs, +10%. Praça do Comércio → Sé, Google with 0 waypoints 512 m, no stairs, +20%; with 2 waypoints 582 m, no stairs, +12%.
+- Before `foot.json`'s encoded values were all listed, GraphHopper refused to start: "Encoded values missing: hike_rating, country, foot_road_access, mtb_rating".
+
 ## Still to do
 
 - [ ] 3–4 real trips from the author in `spike/routes.yaml`, with where the stairs actually are and which way she walks with a stroller.
