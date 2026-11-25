@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["httpx", "shapely", "pyyaml"]
+# dependencies = ["httpx", "shapely", "pyyaml", "rasterio", "pyproj"]
 # ///
 """Risk check: compare stroller routes with ordinary walking routes on real trips.
 
@@ -29,7 +29,9 @@ from pathlib import Path
 from urllib.parse import quote
 
 import httpx
+import rasterio
 import yaml
+from pyproj import Transformer
 from shapely.geometry import LineString, Point, shape
 from shapely.strtree import STRtree
 
@@ -39,6 +41,8 @@ ROUTES_API = "https://routes.googleapis.com/directions/v2:computeRoutes"
 MAX_WAYPOINTS = 3
 # How far a route may start or end from the requested point before it counts as not reaching it.
 SNAP_LIMIT_M = 40.0
+# Google's route may be this many percentage points steeper than ours and still count as holding it.
+SLOPE_TOLERANCE = 2.0
 
 THRESHOLDS = tomllib.loads((ROOT / "config" / "thresholds.toml").read_text())
 
@@ -61,6 +65,36 @@ def line_m(coords_lonlat: list[tuple[float, float]]) -> LineString:
 def bearing_deg(line: LineString) -> float:
     (x0, y0), (x1, y1) = line.coords[0], line.coords[-1]
     return math.degrees(math.atan2(y1 - y0, x1 - x0)) % 180.0
+
+
+# ---------- slopes from the 2 m terrain model ----------
+
+DGT_VRT = ROOT / "data" / "dgt" / "lisbon.vrt"
+_dgt = rasterio.open(DGT_VRT) if DGT_VRT.exists() else None
+_to_dgt = Transformer.from_crs("EPSG:4326", _dgt.crs, always_xy=True) if _dgt else None
+
+
+def dgt_grades(coords_lonlat: list[tuple[float, float]], step_m: float = 2.0, window_m: float = 15.0):
+    """Steepest climb and descent in percent along a line, from DGT's 2 m bare-earth
+    model, measured over a sliding window. None where the line leaves the model."""
+    if _dgt is None:
+        return None
+    xs, ys = _to_dgt.transform([c[0] for c in coords_lonlat], [c[1] for c in coords_lonlat])
+    line = LineString(zip(xs, ys))
+    n = max(int(line.length / step_m), 1)
+    pts = [line.interpolate(i * line.length / n) for i in range(n + 1)]
+    heights = [v[0] for v in _dgt.sample([(p.x, p.y) for p in pts])]
+    if any(h is None or h < -50 for h in heights):
+        return None
+    k = max(int(window_m / (line.length / n)), 1)
+    grades = [100 * (heights[i + k] - heights[i]) / (k * line.length / n) for i in range(len(heights) - k)]
+    if not grades:
+        return 0.0, 0.0
+    return max(grades), min(grades)
+
+
+def fmt_grades(g) -> str:
+    return "n/a (outside the 2 m model)" if g is None else f"+{g[0]:.0f}% / {g[1]:.0f}%"
 
 
 # ---------- stairs ----------
@@ -344,27 +378,38 @@ def write_geojson(name: str, routes: dict[str, Route]) -> Path:
 
 def pin_to_google(client: httpx.Client, key: str, start, end, ours: Route, names: dict[str, str]) -> None:
     """Add waypoints one at a time where Google strays furthest from our route,
-    re-checking Google's actual route after each, up to MAX_WAYPOINTS."""
+    re-checking Google's actual route after each, up to MAX_WAYPOINTS.
+
+    Google's route counts as holding ours when it uses no street stairs and is not
+    noticeably steeper than our route on the 2 m terrain model."""
     our_line = ours.line
+    our_grades = dgt_grades(ours.coords)
     waypoints: list[tuple[float, float]] = []
     while True:
         g_coords, g_dist = google_route_line(client, key, start, end, waypoints)
         g_line = line_m(g_coords)
         stairs = stairs_by_matching(client, g_coords)
         street_stairs = {i for i in stairs if i in names} if stairs is not None else None
+        g_grades = dgt_grades(g_coords)
+        too_steep = (
+            g_grades is not None
+            and our_grades is not None
+            and g_grades[0] > our_grades[0] + SLOPE_TOLERANCE
+        )
         gap = our_line.hausdorff_distance(g_line)
         print(
             f"google, {len(waypoints)} waypoints: {g_dist:.0f} m, max gap {gap:.0f} m, "
+            f"steepest {fmt_grades(g_grades)}{'  <-- steeper than ours' if too_steep else ''}, "
             f"stairs: {describe_stairs(stairs, names)}"
         )
-        if street_stairs == set() or len(waypoints) == MAX_WAYPOINTS:
+        holds = street_stairs == set() and not too_steep
+        if holds or len(waypoints) == MAX_WAYPOINTS:
             break
         # The point of our route that Google's line is furthest from.
         far = max(ours.coords[1:-1], key=lambda c: g_line.distance(Point(to_m(*c))))
         waypoints.append((far[1], far[0]))
         waypoints.sort(key=lambda p: our_line.project(Point(to_m(p[1], p[0]))))
-    verdict = "HOLDS" if street_stairs == set() else "DOES NOT HOLD"
-    print(f"verdict       : link {verdict} the stair-free route")
+    print(f"verdict       : link {'HOLDS' if holds else 'DOES NOT HOLD'} the stair-free route")
     print(f"google link   : {google_link(start, end, waypoints)}")
 
 
@@ -382,10 +427,9 @@ def main() -> None:
             ours = gh_route(client, "stroller", start, end)
 
             if foot:
-                up, down = steepest(foot)
                 print(
                     f"ordinary walk : {foot.distance_m:.0f} m, {foot.time_s / 60:.0f} min, "
-                    f"steepest +{up:.0f}% / {down:.0f}%, stairs: {describe_stairs(stairs_by_matching(client, foot.coords), names)}"
+                    f"steepest (2 m terrain) {fmt_grades(dgt_grades(foot.coords))}, stairs: {describe_stairs(stairs_by_matching(client, foot.coords), names)}"
                 )
             if not ours:
                 print("stroller route: NONE within the limits (honest 'no route' case)")
@@ -402,11 +446,11 @@ def main() -> None:
                     f"end off by {miss_end:.0f} m) -> honest 'no route' case"
                 )
                 continue
-            up, down = steepest(ours)
-            flag = "  <-- above the uphill limit" if up > max_up else ""
+            g = dgt_grades(ours.coords)
+            flag = "  <-- above the uphill limit" if g and g[0] > max_up else ""
             print(
                 f"stroller route: {ours.distance_m:.0f} m, {ours.time_s / 60:.0f} min, "
-                f"steepest +{up:.0f}% / {down:.0f}%{flag}, "
+                f"steepest (2 m terrain) {fmt_grades(g)}{flag}, "
                 f"stairs: {describe_stairs(stairs_by_matching(client, ours.coords), names)}"
             )
             if foot:
