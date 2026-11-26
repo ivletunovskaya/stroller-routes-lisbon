@@ -37,7 +37,9 @@ trips:
     to: [38.69637, -9.19085]     # Sud Kids, Pavilhão Norte, Av. Brasília 311 (riverside)
     notes: >
       Real trip, from the museum across Av. da Índia and the railway to the riverside.
-      The author says Google's main walking route goes over stairs.
+      The author says Google's main walking route goes over stairs (footbridge
+      w98491671 / w98491675). The MAAT footbridge has a ramp and is fine with a
+      stroller (author, 2026-11-26), so the router's way over it is correct.
 
   - name: alcantara-library-to-alvito-pool
     from: [38.70635, -9.17797]   # Biblioteca de Alcântara

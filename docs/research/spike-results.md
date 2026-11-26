@@ -94,7 +94,7 @@ What the real trips exposed in the check itself:
 - **The 8% limit and the 2 m measurement do not agree.** GraphHopper applies the limit to edge averages on a ~30 m grid, while the 2 m check takes the steepest 15 m stretch. Routes within the router's limit show +10% to +14% on the 2 m model, so the "above the uphill limit" flag fires on almost every hill trip. Which number matches what a parent feels needs her account of these streets.
 - **The steepest stretch can sit at the destination itself.** The −26% on the MACAM trip is the first 15 m, from the museum point (inside the grounds) to the street.
 - **Bridges look like cliffs on the 2 m terrain model.** It is bare earth, so a route over the MAAT footbridge showed +31% / −39%: the ground under the deck. Stretches on bridges, raised plazas and tunnels (OSM `bridge`, `tunnel` or a non-zero `layer`, within 8 m of the line) are now bridged with a straight line between the ground on either side (`data/lisbon-offground.geojson`). The stroller route then reads +3% / −4%.
-- **Open question for the author:** OSM connects the MAAT footbridge to the street without stairs. Whether that end really has a ramp or lift decides whether this route is right.
+- **Confirmed by the author:** the MAAT footbridge has a ramp and is fine with a stroller, so the stroller route MACAM → Sud Kids matches how she walks it. This is the first trip where the router's answer is confirmed on the ground.
 - **The downloaded 2 m tiles stop short of Monsanto and western Belém.** Trips there need more DGT tiles.
 
 ## Measurement log
