@@ -80,11 +80,11 @@ What this says:
 
 ## Finding 7: first real trips (2026-11-26)
 
-Three trips from the author, start and end points from OpenStreetMap; her notes on stairs and her actual stroller way are still to come.
+Three trips from the author. End points come from her Google Maps links (the first trip's playground was wrongly guessed at first); her notes on stairs and her actual stroller way are still to come.
 
 | Trip | Ordinary walk | Stroller route | Google link |
 |---|---|---|---|
-| MACAM → playground at Largo do Marquês de Angeja (near SUD) | 1,405 m, no stairs | same route | holds with 0 waypoints |
+| MACAM → Sud Kids (riverside, Av. Brasília 311) | 1,040 m over two footbridge staircases (`w98491671`, `w98491675`), as the author said | 1,578 m over the MAAT footbridge, no stairs in OSM, +3% / −4% | holds with 1 waypoint |
 | Biblioteca de Alcântara → Piscina do Alvito | 757 m, +13% | 10,403 m, 137 min, through Monsanto | cannot be verified: the detour leaves the downloaded 2 m tiles |
 | Let's Pastrami → Escola de Pedro Nunes | 1,465 m, +27% | 2,387 m, +14% on the 2 m model | "holds", but Google takes another way at the same +14% |
 
@@ -93,6 +93,8 @@ What the real trips exposed in the check itself:
 - **A link was called "holds" when our slope was unknown.** On the Alvito trip our route left the 2 m tiles, so the slope comparison was skipped and Google's direct +18% climb passed. A link now holds only when both slopes are known; otherwise the verdict is "cannot be verified".
 - **The 8% limit and the 2 m measurement do not agree.** GraphHopper applies the limit to edge averages on a ~30 m grid, while the 2 m check takes the steepest 15 m stretch. Routes within the router's limit show +10% to +14% on the 2 m model, so the "above the uphill limit" flag fires on almost every hill trip. Which number matches what a parent feels needs her account of these streets.
 - **The steepest stretch can sit at the destination itself.** The −26% on the MACAM trip is the first 15 m, from the museum point (inside the grounds) to the street.
+- **Bridges look like cliffs on the 2 m terrain model.** It is bare earth, so a route over the MAAT footbridge showed +31% / −39%: the ground under the deck. Stretches on bridges, raised plazas and tunnels (OSM `bridge`, `tunnel` or a non-zero `layer`, within 8 m of the line) are now bridged with a straight line between the ground on either side (`data/lisbon-offground.geojson`). The stroller route then reads +3% / −4%.
+- **Open question for the author:** OSM connects the MAAT footbridge to the street without stairs. Whether that end really has a ramp or lift decides whether this route is right.
 - **The downloaded 2 m tiles stop short of Monsanto and western Belém.** Trips there need more DGT tiles.
 
 ## Measurement log

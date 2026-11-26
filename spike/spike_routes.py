@@ -32,7 +32,11 @@ import httpx
 import rasterio
 import yaml
 from pyproj import Transformer
+import numpy as np
+import shapely
 from shapely.geometry import LineString, Point, shape
+from shapely.ops import unary_union
+from shapely.prepared import prep
 from shapely.strtree import STRtree
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -74,6 +78,28 @@ _dgt = rasterio.open(DGT_VRT) if DGT_VRT.exists() else None
 _to_dgt = Transformer.from_crs("EPSG:4326", _dgt.crs, always_xy=True) if _dgt else None
 
 
+def _load_offground():
+    """Walkable ways that are not on the ground: bridges, raised plazas, tunnels."""
+    path = ROOT / "data" / "lisbon-offground.geojson"
+    if _dgt is None or not path.exists():
+        return None
+    shapes = []
+    for f in json.loads(path.read_text())["features"]:
+        props = f.get("properties") or {}
+        if "highway" not in props:
+            continue
+        layer = str(props.get("layer", "0")).split(";")[0]
+        off = props.get("bridge", "no") != "no" or props.get("tunnel", "no") != "no" or layer not in ("0", "")
+        if off:
+            geom = shapely.transform(shape(f["geometry"]), lambda c: np.column_stack(_to_dgt.transform(c[:, 0], c[:, 1])))
+            # Wide enough for Google lines, which run a few metres off the OSM way.
+            shapes.append(geom.buffer(8))
+    return prep(unary_union(shapes)) if shapes else None
+
+
+_offground = _load_offground()
+
+
 def dgt_grades(coords_lonlat: list[tuple[float, float]], step_m: float = 2.0, window_m: float = 15.0):
     """Steepest climb and descent in percent along a line, from DGT's 2 m bare-earth
     model, measured over a sliding window. None where the line leaves the model."""
@@ -86,6 +112,23 @@ def dgt_grades(coords_lonlat: list[tuple[float, float]], step_m: float = 2.0, wi
     heights = [v[0] for v in _dgt.sample([(p.x, p.y) for p in pts])]
     if any(h is None or h < -50 for h in heights):
         return None
+    # The terrain model is bare earth: on a bridge or a raised plaza it gives the
+    # ground below, not the deck. Bridge those stretches with a straight line
+    # between the last and next points on the ground.
+    if _offground is not None:
+        off = [_offground.contains(p) for p in pts]
+        ground = [i for i, o in enumerate(off) if not o]
+        if not ground:
+            return None
+        for i, o in enumerate(off):
+            if o:
+                before = max((g for g in ground if g < i), default=None)
+                after = min((g for g in ground if g > i), default=None)
+                if before is None or after is None:
+                    heights[i] = heights[after if before is None else before]
+                else:
+                    w = (i - before) / (after - before)
+                    heights[i] = heights[before] * (1 - w) + heights[after] * w
     k = max(int(window_m / (line.length / n)), 1)
     grades = [100 * (heights[i + k] - heights[i]) / (k * line.length / n) for i in range(len(heights) - k)]
     if not grades:

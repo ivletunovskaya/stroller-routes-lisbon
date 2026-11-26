@@ -32,15 +32,16 @@ trips:
 
   # Real trips from the project owner (2026-11-26). Points come from OpenStreetMap;
   # notes on stairs and the actual stroller way are still to be added.
-  - name: macam-to-playground-by-sud
-    from: [38.70049, -9.18330]   # MACAM museum, Rua da Junqueira
-    to: [38.69676, -9.19659]     # Parque Infantil do Largo do Marquês de Angeja (nearest playground to SUD Lisboa; to confirm)
+  - name: macam-to-sud-kids
+    from: [38.70039, -9.18330]   # MACAM museum, Rua da Junqueira 66
+    to: [38.69637, -9.19085]     # Sud Kids, Pavilhão Norte, Av. Brasília 311 (riverside)
     notes: >
-      Real trip, Alcântara/Belém riverside. Stairs and actual way: to be described.
+      Real trip, from the museum across Av. da Índia and the railway to the riverside.
+      The author says Google's main walking route goes over stairs.
 
   - name: alcantara-library-to-alvito-pool
     from: [38.70635, -9.17797]   # Biblioteca de Alcântara
-    to: [38.71087, -9.18163]     # Piscina do Alvito, Rua Professor Vieira Natividade (approximate)
+    to: [38.71063, -9.18115]     # Piscina Municipal do Alvito, Rua Professor Vieira Natividade (from the author's Google Maps link)
     notes: >
       Real trip, climb from the Alcântara valley towards Bairro do Alvito. Stairs and actual way: to be described.
 
