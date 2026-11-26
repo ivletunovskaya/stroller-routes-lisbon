@@ -6,6 +6,7 @@ module: route verification
 problem_type: design_pattern
 component: service_layer
 severity: high
+last_updated: 2026-11-26
 applies_when:
   - "Handing a route we computed to Google Maps as a walking link with waypoints"
   - "Deciding whether the route Google will actually draw is safe to call suitable"
@@ -25,8 +26,9 @@ Two things went wrong in the first version of that check during the risk check:
 
 ## Guidance
 
-1. **Add waypoints one at a time where Google strays furthest.** Ask Google for the route with the current waypoints, find the point of our route farthest from Google's line, add it as the next waypoint, and ask again, up to 3 waypoints. See `pin_to_google` in `spike/spike_routes.py:379`, with the farthest-point step at line 409.
+1. **Add waypoints one at a time where Google strays furthest.** Ask Google for the route with the current waypoints, find the point of our route farthest from Google's line, add it as the next waypoint, and ask again, up to 3 waypoints. See `pin_to_google` in `spike/spike_routes.py:392`, with the farthest-point step at line 424.
 2. **A link holds only if Google's line has no street stairs and is not noticeably steeper than ours.** Stairs come from map matching (see the related learning). The steepest stretch of both lines is measured on the DGT 2 m model over a 15 m window. Google may be at most 2 points steeper (`SLOPE_TOLERANCE`, `spike/spike_routes.py:45`).
+   If either slope is unknown (a line leaves the 2 m terrain tiles), the link does not hold: the verdict is "cannot be verified". On the first real trips, Biblioteca de Alcântara → Piscina do Alvito, our detour left the tiles, the comparison was skipped, and Google's direct +18% climb was called "holds" (`docs/research/spike-results.md`, Finding 7). See `slope_known` in `pin_to_google`.
 3. **If 3 waypoints do not make it hold, do not send the link as suitable.** Answer honestly instead (the "no route" or least-bad answer).
 4. **Use Google's line in memory only.** Under the Google Maps Platform terms it is not stored or drawn (`docs/research/2026-11-17-technical-research.md`, Routes API and terms).
 

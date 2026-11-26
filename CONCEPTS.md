@@ -24,4 +24,4 @@ An outdoor flight of steps a walking route can use. Steps inside stations and bu
 
 ### Holds
 
-A Google Maps link holds a stroller route when the route Google actually draws for it uses no street staircase and is not noticeably steeper than the stroller route. Only a link that holds may be offered as suitable.
+A Google Maps link holds a stroller route when the route Google actually draws for it uses no street staircase and is not noticeably steeper than the stroller route. When either slope cannot be measured, the link does not hold. Only a link that holds may be offered as suitable.
