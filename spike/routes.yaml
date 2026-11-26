@@ -29,3 +29,23 @@ trips:
     notes: >
       Example trip with a moderate climb. Small stair passages through the old town
       are the short way; Rua da Prata / Rua de São Julião / Rua Augusto Rosa is the street way.
+
+  # Real trips from the project owner (2026-11-26). Points come from OpenStreetMap;
+  # notes on stairs and the actual stroller way are still to be added.
+  - name: macam-to-playground-by-sud
+    from: [38.70049, -9.18330]   # MACAM museum, Rua da Junqueira
+    to: [38.69676, -9.19659]     # Parque Infantil do Largo do Marquês de Angeja (nearest playground to SUD Lisboa; to confirm)
+    notes: >
+      Real trip, Alcântara/Belém riverside. Stairs and actual way: to be described.
+
+  - name: alcantara-library-to-alvito-pool
+    from: [38.70635, -9.17797]   # Biblioteca de Alcântara
+    to: [38.71087, -9.18163]     # Piscina do Alvito, Rua Professor Vieira Natividade (approximate)
+    notes: >
+      Real trip, climb from the Alcântara valley towards Bairro do Alvito. Stairs and actual way: to be described.
+
+  - name: lets-pastrami-to-escola-pedro-nunes
+    from: [38.71114, -9.15020]   # Let's Pastrami, Rua dos Poiais de São Bento 20
+    to: [38.71587, -9.16335]     # Escola de Pedro Nunes (basic school; the secondary school is at 38.71656, -9.15984)
+    notes: >
+      Real trip, São Bento up to Estrela/Campo de Ourique. Stairs and actual way: to be described.

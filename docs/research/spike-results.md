@@ -78,6 +78,23 @@ What this says:
 - **Slope checks catch what stair checks miss.** Google's own route to the Sé has no stairs but a +20% climb; with stairs-only checking it would have been passed as fine.
 - **The thresholds are not settled.** An 8% cap turns Rossio → Chiado into a 44-minute detour. Whether parents would rather push up Rua do Carmo, and how steep a short ramp is acceptable (our routes still show +10–11% over 15 m), can only come from real trips.
 
+## Finding 7: first real trips (2026-11-26)
+
+Three trips from the author, start and end points from OpenStreetMap; her notes on stairs and her actual stroller way are still to come.
+
+| Trip | Ordinary walk | Stroller route | Google link |
+|---|---|---|---|
+| MACAM → playground at Largo do Marquês de Angeja (near SUD) | 1,405 m, no stairs | same route | holds with 0 waypoints |
+| Biblioteca de Alcântara → Piscina do Alvito | 757 m, +13% | 10,403 m, 137 min, through Monsanto | cannot be verified: the detour leaves the downloaded 2 m tiles |
+| Let's Pastrami → Escola de Pedro Nunes | 1,465 m, +27% | 2,387 m, +14% on the 2 m model | "holds", but Google takes another way at the same +14% |
+
+What the real trips exposed in the check itself:
+- **Map matching our own route reported stairs it never used.** The stroller route Let's Pastrami → Pedro Nunes was reported with two short staircases (`w1566675914`, 3 steps; `w1566675916`, 2 steps); GraphHopper's route details show no steps. Our own routes now take their stairs from GraphHopper's `road_class` / `osm_way_id` details; matching stays for Google's lines only.
+- **A link was called "holds" when our slope was unknown.** On the Alvito trip our route left the 2 m tiles, so the slope comparison was skipped and Google's direct +18% climb passed. A link now holds only when both slopes are known; otherwise the verdict is "cannot be verified".
+- **The 8% limit and the 2 m measurement do not agree.** GraphHopper applies the limit to edge averages on a ~30 m grid, while the 2 m check takes the steepest 15 m stretch. Routes within the router's limit show +10% to +14% on the 2 m model, so the "above the uphill limit" flag fires on almost every hill trip. Which number matches what a parent feels needs her account of these streets.
+- **The steepest stretch can sit at the destination itself.** The −26% on the MACAM trip is the first 15 m, from the museum point (inside the grounds) to the street.
+- **The downloaded 2 m tiles stop short of Monsanto and western Belém.** Trips there need more DGT tiles.
+
 ## Measurement log
 
 Raw observations from the session runs, kept so that later documents can cite them.
@@ -91,7 +108,9 @@ Raw observations from the session runs, kept so that later documents can cite th
 
 ## Still to do
 
-- [ ] 3–4 real trips from the author in `spike/routes.yaml`, with where the stairs actually are and which way she walks with a stroller.
+- [x] 3 real trips from the author in `spike/routes.yaml` (points only).
+- [ ] Her notes for them: where the stairs actually are and which way she walks with a stroller.
+- [ ] DGT tiles for Monsanto and western Belém.
 - [x] DGT MDT 2 m tiles downloaded and wired in (GraphHopper grid + 2 m slope check).
 - [ ] Tune the slope thresholds on real trips.
 - [x] Google Maps Platform key set up; the check runs (computeRoutes + map matching).

@@ -24,7 +24,7 @@ import math
 import os
 import sys
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import quote
 
@@ -222,6 +222,7 @@ class Route:
     elevations: list[float]
     distance_m: float
     time_s: float
+    stairs: set[str] = field(default_factory=set)  # OSM ids of staircases used
 
     @property
     def line(self) -> LineString:
@@ -235,6 +236,7 @@ def gh_route(client: httpx.Client, profile: str, start, end) -> Route | None:
         "points_encoded": False,
         "elevation": True,
         "instructions": False,
+        "details": ["road_class", "osm_way_id"],
     }
     resp = client.post(f"{GH_URL}/route", json=body, timeout=30)
     if resp.status_code == 400:
@@ -242,11 +244,22 @@ def gh_route(client: httpx.Client, profile: str, start, end) -> Route | None:
     resp.raise_for_status()
     path = resp.json()["paths"][0]
     pts = path["points"]["coordinates"]
+    # Stairs on our own route come straight from the graph, not from map matching:
+    # matching our line again can snap it onto a short staircase beside the footway.
+    ids = path["details"]["osm_way_id"]
+    stairs = {
+        f"w{way}"
+        for a, b, v in path["details"]["road_class"]
+        if v == "steps"
+        for s, e, way in ids
+        if s < b and e > a
+    }
     return Route(
         coords=[(p[0], p[1]) for p in pts],
         elevations=[p[2] if len(p) > 2 else 0.0 for p in pts],
         distance_m=path["distance"],
         time_s=path["time"] / 1000,
+        stairs=stairs,
     )
 
 
@@ -402,14 +415,17 @@ def pin_to_google(client: httpx.Client, key: str, start, end, ours: Route, names
             f"steepest {fmt_grades(g_grades)}{'  <-- steeper than ours' if too_steep else ''}, "
             f"stairs: {describe_stairs(stairs, names)}"
         )
-        holds = street_stairs == set() and not too_steep
+        # Without slope figures for both lines the link cannot be called safe.
+        slope_known = g_grades is not None and our_grades is not None
+        holds = street_stairs == set() and slope_known and not too_steep
         if holds or len(waypoints) == MAX_WAYPOINTS:
             break
         # The point of our route that Google's line is furthest from.
         far = max(ours.coords[1:-1], key=lambda c: g_line.distance(Point(to_m(*c))))
         waypoints.append((far[1], far[0]))
         waypoints.sort(key=lambda p: our_line.project(Point(to_m(p[1], p[0]))))
-    print(f"verdict       : link {'HOLDS' if holds else 'DOES NOT HOLD'} the stair-free route")
+    verdict = "HOLDS" if holds else "DOES NOT HOLD" if slope_known else "CANNOT BE VERIFIED (no 2 m terrain)"
+    print(f"verdict       : link {verdict} the stair-free route")
     print(f"google link   : {google_link(start, end, waypoints)}")
 
 
@@ -429,7 +445,7 @@ def main() -> None:
             if foot:
                 print(
                     f"ordinary walk : {foot.distance_m:.0f} m, {foot.time_s / 60:.0f} min, "
-                    f"steepest (2 m terrain) {fmt_grades(dgt_grades(foot.coords))}, stairs: {describe_stairs(stairs_by_matching(client, foot.coords), names)}"
+                    f"steepest (2 m terrain) {fmt_grades(dgt_grades(foot.coords))}, stairs: {describe_stairs(foot.stairs, names)}"
                 )
             if not ours:
                 print("stroller route: NONE within the limits (honest 'no route' case)")
@@ -451,7 +467,7 @@ def main() -> None:
             print(
                 f"stroller route: {ours.distance_m:.0f} m, {ours.time_s / 60:.0f} min, "
                 f"steepest (2 m terrain) {fmt_grades(g)}{flag}, "
-                f"stairs: {describe_stairs(stairs_by_matching(client, ours.coords), names)}"
+                f"stairs: {describe_stairs(ours.stairs, names)}"
             )
             if foot:
                 print(f"extra time vs ordinary walk: {(ours.time_s - foot.time_s) / 60:+.0f} min")
