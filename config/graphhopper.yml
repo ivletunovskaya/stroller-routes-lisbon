@@ -23,6 +23,15 @@ graphhopper:
     # No stairs, capped slopes, climbs cost more than descents.
     - name: stroller
       custom_model_files: [foot.json, stroller-model.json]
+    # Stair-free alternatives with uphill limits from gentle to tolerant (spike/compare_routes.py).
+    - name: stroller_up5
+      custom_model_files: [foot.json, stroller-up5.json]
+    - name: stroller_up7
+      custom_model_files: [foot.json, stroller-up7.json]
+    - name: stroller_up9
+      custom_model_files: [foot.json, stroller-up9.json]
+    - name: stroller_up12
+      custom_model_files: [foot.json, stroller-up12.json]
 
   profiles_ch: []
   profiles_lm: []

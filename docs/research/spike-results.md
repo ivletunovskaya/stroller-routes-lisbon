@@ -97,6 +97,27 @@ What the real trips exposed in the check itself:
 - **Confirmed by the author:** the MAAT footbridge has a ramp and is fine with a stroller, so the stroller route MACAM → Sud Kids matches how she walks it. This is the first trip where the router's answer is confirmed on the ground.
 - **The downloaded 2 m tiles stop short of Monsanto and western Belém.** Trips there need more DGT tiles.
 
+## Finding 8: compare with Google's suggestion instead of a fixed limit (2026-11-27)
+
+The author reframed the question: the assistant should say how Google advises, whether that is the only comfortable way, and whether a better one exists. A fixed 8% limit answered a different question and produced useless detours (10 km through Monsanto instead of 800 m to the Alvito pool).
+
+`spike/compare_routes.py` takes Google's suggested route and stair-free alternatives under uphill limits of 5, 7, 9 and 12% (one GraphHopper profile each, `config/stroller-up*.json`), and answers with one of: Google's route is already the most comfortable; a better way exists and what it costs; no stair-free way.
+
+| Trip | Google suggests | Answer |
+|---|---|---|
+| Praça da Figueira → Castelo | 1,357 m, 1 staircase | no stair-free way (lifts not in the router yet) |
+| Rossio → Camões | 642 m, 4 staircases, +50% | stair-free way 1,352 m, +15%, about +10 min; the link holds with 1 waypoint |
+| Comércio → Sé | 512 m, no stairs, +20% | Google's route is already the most comfortable found |
+| MACAM → Sud Kids | 1,034 m, 2 footbridge staircases | stair-free way over the MAAT bridge (ramp confirmed), +3%, about +7 min; the link holds with 1 waypoint |
+| Biblioteca de Alcântara → Piscina do Alvito | 659 m, no stairs, +29% in the last ~40 m on Estrada do Alvito | gentler way along Rua Professor Vieira Natividade, 813 m, +12%, about +4 min; Google cannot be made to follow it with 3 waypoints |
+| Let's Pastrami → Escola de Pedro Nunes | 1,382 m, no stairs, +14% on Calçada da Estrela | Google's route is already the most comfortable found |
+
+Google's walking time is estimated at GraphHopper's foot pace; "gentler" means the steepest 15 m stretch is at least 3 points lower, within +10 min or +50% of Google's time.
+
+Also found: a slope limit sent with the request (`custom_model`) does not change where GraphHopper snaps the end point. The route then detours to reach a steep last edge that a profile with the same limit avoids (Comércio → Sé: 4.3 km instead of 0.6 km). Each limit therefore has its own profile.
+
+Open: whether the +29% at the Alvito pool entrance is real or a terrain artefact.
+
 ## Measurement log
 
 Raw observations from the session runs, kept so that later documents can cite them.
@@ -114,7 +135,7 @@ Raw observations from the session runs, kept so that later documents can cite th
 - [ ] Her notes for them: where the stairs actually are and which way she walks with a stroller.
 - [ ] DGT tiles for Monsanto and western Belém.
 - [x] DGT MDT 2 m tiles downloaded and wired in (GraphHopper grid + 2 m slope check).
-- [ ] Tune the slope thresholds on real trips.
+- [ ] Tune what counts as "gentler" and the extra-time budget on real trips (Finding 8).
 - [x] Google Maps Platform key set up; the check runs (computeRoutes + map matching).
 - [ ] For each real trip, check whether the link with ≤3 waypoints keeps Google on our route.
 - [ ] The author taps each link inside Telegram and records whether the Google Maps app keeps the waypoints and draws the same route.

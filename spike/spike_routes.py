@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["httpx", "shapely", "pyyaml", "rasterio", "pyproj"]
+# dependencies = ["httpx", "shapely", "pyyaml", "rasterio", "pyproj", "numpy"]
 # ///
 """Risk check: compare stroller routes with ordinary walking routes on real trips.
 
@@ -100,9 +100,10 @@ def _load_offground():
 _offground = _load_offground()
 
 
-def dgt_grades(coords_lonlat: list[tuple[float, float]], step_m: float = 2.0, window_m: float = 15.0):
-    """Steepest climb and descent in percent along a line, from DGT's 2 m bare-earth
-    model, measured over a sliding window. None where the line leaves the model."""
+def dgt_profile(coords_lonlat: list[tuple[float, float]], step_m: float = 2.0):
+    """Heights every ~step_m metres along a line from DGT's 2 m bare-earth model,
+    with bridges and raised plazas bridged over. Returns (step, heights), or None
+    where the line leaves the model."""
     if _dgt is None:
         return None
     xs, ys = _to_dgt.transform([c[0] for c in coords_lonlat], [c[1] for c in coords_lonlat])
@@ -129,11 +130,33 @@ def dgt_grades(coords_lonlat: list[tuple[float, float]], step_m: float = 2.0, wi
                 else:
                     w = (i - before) / (after - before)
                     heights[i] = heights[before] * (1 - w) + heights[after] * w
-    k = max(int(window_m / (line.length / n)), 1)
-    grades = [100 * (heights[i + k] - heights[i]) / (k * line.length / n) for i in range(len(heights) - k)]
+    return line.length / n, heights
+
+
+def dgt_grades(coords_lonlat: list[tuple[float, float]], step_m: float = 2.0, window_m: float = 15.0):
+    """Steepest climb and descent in percent along a line, measured over a sliding
+    window on the 2 m terrain model. None where the line leaves the model."""
+    prof = dgt_profile(coords_lonlat, step_m)
+    if prof is None:
+        return None
+    step, heights = prof
+    k = max(int(window_m / step), 1)
+    grades = [100 * (heights[i + k] - heights[i]) / (k * step) for i in range(len(heights) - k)]
     if not grades:
         return 0.0, 0.0
     return max(grades), min(grades)
+
+
+def dgt_climb(coords_lonlat: list[tuple[float, float]], every_m: float = 10.0) -> float | None:
+    """Total metres climbed along a line, from heights every ~10 m (finer steps add
+    up terrain noise). None where the line leaves the model."""
+    prof = dgt_profile(coords_lonlat)
+    if prof is None:
+        return None
+    step, heights = prof
+    k = max(int(every_m / step), 1)
+    h = heights[::k] + ([heights[-1]] if (len(heights) - 1) % k else [])
+    return sum(max(b - a, 0.0) for a, b in zip(h, h[1:]))
 
 
 def fmt_grades(g) -> str:
@@ -272,7 +295,7 @@ class Route:
         return line_m(self.coords)
 
 
-def gh_route(client: httpx.Client, profile: str, start, end) -> Route | None:
+def gh_route(client: httpx.Client, profile: str, start, end, custom_model: dict | None = None) -> Route | None:
     body = {
         "points": [[start[1], start[0]], [end[1], end[0]]],
         "profile": profile,
@@ -281,6 +304,9 @@ def gh_route(client: httpx.Client, profile: str, start, end) -> Route | None:
         "instructions": False,
         "details": ["road_class", "osm_way_id"],
     }
+    if custom_model:
+        # Added on top of the profile's own model (no CH, so per-request models work).
+        body["custom_model"] = custom_model
     resp = client.post(f"{GH_URL}/route", json=body, timeout=30)
     if resp.status_code == 400:
         return None  # no route in this profile
