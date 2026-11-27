@@ -33,7 +33,7 @@ When a destination can only be reached by edges the profile forbids (stairs, slo
 
 ## Solution
 
-Compare the requested start and end with the first and last points of the returned path. If either is farther than a small limit (40 m in the spike), report the honest "no route" answer instead of the route. See `SNAP_LIMIT_M` and the check in `main` in `spike/spike_routes.py:43`.
+Compare the requested start and end with the first and last points of the returned path. If either is farther than a small limit (40 m in the spike), report the honest "no route" answer instead of the route. See `SNAP_LIMIT_M` and the check in `main` in `spike/spike_routes.py`.
 
 ```python
 miss_start = math.dist(to_m(start[1], start[0]), to_m(*ours.coords[0]))

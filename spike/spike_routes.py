@@ -47,6 +47,10 @@ MAX_WAYPOINTS = 3
 SNAP_LIMIT_M = 40.0
 # Google's route may be this many percentage points steeper than ours and still count as holding it.
 SLOPE_TOLERANCE = 2.0
+# Google's line within this many metres of ours everywhere is the same way. Slopes measured
+# on two lines a few metres apart differ by several points (walls, kerbs, embankments on the
+# 2 m model), so on the same way only stairs are compared.
+SAME_WAY_M = 15.0
 
 THRESHOLDS = tomllib.loads((ROOT / "config" / "thresholds.toml").read_text())
 
@@ -479,13 +483,15 @@ def pin_to_google(client: httpx.Client, key: str, start, end, ours: Route, names
             and g_grades[0] > our_grades[0] + SLOPE_TOLERANCE
         )
         gap = our_line.hausdorff_distance(g_line)
+        if gap <= SAME_WAY_M:
+            too_steep = False
         print(
             f"google, {len(waypoints)} waypoints: {g_dist:.0f} m, max gap {gap:.0f} m, "
             f"steepest {fmt_grades(g_grades)}{'  <-- steeper than ours' if too_steep else ''}, "
             f"stairs: {describe_stairs(stairs, names)}"
         )
         # Without slope figures for both lines the link cannot be called safe.
-        slope_known = g_grades is not None and our_grades is not None
+        slope_known = (g_grades is not None and our_grades is not None) or gap <= SAME_WAY_M
         holds = street_stairs == set() and slope_known and not too_steep
         if holds or len(waypoints) == MAX_WAYPOINTS:
             break

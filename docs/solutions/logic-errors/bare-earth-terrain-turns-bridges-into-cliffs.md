@@ -27,7 +27,7 @@ The DGT MDT 2 m model is bare earth: buildings and bridges are removed. Sampling
 
 ## Solution
 
-Export the walkable ways that are off the ground from OSM (any `highway` way with `bridge`, `tunnel` or a non-zero `layer`) into `data/lisbon-offground.geojson` (`scripts/fetch_osm.sh`). In the slope check, sample points that fall within 8 m of one of them get a height interpolated in a straight line between the nearest ground points on either side (`_load_offground` at `spike/spike_routes.py:81`, applied in `dgt_grades` at line 115). After the fix the stroller route read +3% / -4%.
+Export the walkable ways that are off the ground from OSM (any `highway` way with `bridge`, `tunnel` or a non-zero `layer`) into `data/lisbon-offground.geojson` (`scripts/fetch_osm.sh`). In the slope check, sample points that fall within 8 m of one of them get a height interpolated in a straight line between the nearest ground points on either side (`_load_offground` in `spike/spike_routes.py`, applied in `dgt_profile`). After the fix the stroller route read +3% / -4%.
 
 The 8 m margin is because Google's lines run a few metres off the OSM way: with 3 m, Google's line over the same bridge still showed -39%.
 

@@ -48,6 +48,13 @@ trips:
       Real trip, climb from the Alcântara valley towards Bairro do Alvito. The last stretch of
       Google's way, along Estrada do Alvito to the entrance, is very steep (author, 2026-11-27).
 
+  - name: alcantara-library-to-alvito-pool-side-entrance
+    from: [38.70635, -9.17797]   # Biblioteca de Alcântara
+    to: [38.71087, -9.18163]     # Piscina do Alvito, entrance from the Rua Professor Vieira Natividade side (end of the service road; approximate)
+    notes: >
+      Same trip to the pool's other entrance. The pool has entrances on both sides (author, 2026-11-27);
+      this one avoids the steep approach along Estrada do Alvito.
+
   - name: lets-pastrami-to-escola-pedro-nunes
     from: [38.71114, -9.15020]   # Let's Pastrami, Rua dos Poiais de São Bento 20
     to: [38.71587, -9.16335]     # Escola de Pedro Nunes (basic school; the secondary school is at 38.71656, -9.15984)

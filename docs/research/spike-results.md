@@ -118,6 +118,12 @@ Also found: a slope limit sent with the request (`custom_model`) does not change
 
 Confirmed by the author: the last stretch to the Alvito pool along Estrada do Alvito is very steep, so the +29% on the 2 m model is real, not an artefact. Open: whether the pool can be entered from the Rua Professor Vieira Natividade side, where the gentler way ends; if so, a link ending there may hold.
 
+## Finding 9: the entrance matters as much as the way (2026-11-27)
+
+The Alvito pool has entrances on both sides (author). To the entrance on the Estrada do Alvito side, Google's way ends with the very steep stretch (+29%, confirmed). To the entrance on the Rua Professor Vieira Natividade side, Google's own way is the gentle one: 762 m, no stairs, and it runs within 10 m of our best alternative the whole way. So the useful answer is "go to the side entrance; Google's route there is fine", and no waypoints are needed.
+
+This also exposed noise in the check: on the same street, the 2 m model gave Google's line +18% and ours +13%, because the two lines sit a few metres apart (walls, kerbs, embankments). A Google line within 15 m of ours everywhere now counts as the same way (`SAME_WAY_M`): only stairs are compared, and it is not offered as an "alternative" to itself.
+
 ## Measurement log
 
 Raw observations from the session runs, kept so that later documents can cite them.

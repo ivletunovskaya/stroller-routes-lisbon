@@ -84,6 +84,10 @@ def pick_better(google: Option, options: list[Option]) -> tuple[Option | None, s
         return None, "Google's route has stairs and no stair-free way was found"
     if google.up is None:
         return None, "cannot compare: Google's route leaves the 2 m terrain"
+    # An option on the same way as Google's (lines within a few metres) is not an
+    # alternative, however its measured slope differs.
+    g_line = sr.line_m(google.coords)
+    usable = [o for o in usable if sr.line_m(o.coords).hausdorff_distance(g_line) > sr.SAME_WAY_M]
     gentler = [o for o in usable if o.up <= google.up - GENTLER_BY]
     if not gentler:
         return None, "Google's route is already the most comfortable one found"
@@ -96,6 +100,8 @@ def main() -> None:
     if not key:
         sys.exit("set GOOGLE_MAPS_API_KEY")
     trips = yaml.safe_load((sr.ROOT / "spike" / "routes.yaml").read_text())["trips"]
+    if len(sys.argv) > 1:  # optional: only trips whose name contains this text
+        trips = [t for t in trips if sys.argv[1] in t["name"]]
     names = {s.osm_id: s.name for s in sr.load_stairs()}
     with httpx.Client() as client:
         for trip in trips:

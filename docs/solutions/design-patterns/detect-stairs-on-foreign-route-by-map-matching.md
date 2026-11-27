@@ -35,9 +35,9 @@ Why the geometric rule fails:
 
 ## Guidance
 
-1. **Snap the foreign line onto the OSM walking graph** with GraphHopper's `/match` endpoint (`foot` profile), then read `road_class` and `osm_way_id` path details. The staircases are the ways on `road_class == steps` segments. See `stairs_by_matching` in `spike/spike_routes.py:177`.
+1. **Snap the foreign line onto the OSM walking graph** with GraphHopper's `/match` endpoint (`foot` profile), then read `road_class` and `osm_way_id` path details. The staircases are the ways on `road_class == steps` segments. See `stairs_by_matching` in `spike/spike_routes.py`.
 2. **Densify the line before matching.** Send a point every ~10 m (`gps_accuracy` 15). Google polylines are sparse, and the matcher needs dense points to follow Lisbon's short street segments.
-3. **Count street staircases only.** Drop OSM `highway=steps` ways tagged `indoor`, `level` or `conveying` (stations, buildings, escalators); see `spike/spike_routes.py:120`. In this session's calibration run, none of the staircases the routes really used carried these tags.
+3. **Count street staircases only.** Drop OSM `highway=steps` ways tagged `indoor`, `level` or `conveying` (stations, buildings, escalators); see `load_stairs` in `spike/spike_routes.py`. In this session's calibration run, none of the staircases the routes really used carried these tags.
 4. **Ask GraphHopper for `osm_way_id`.** It is not a default path detail: add `osm_way_id` to `graph.encoded_values` and rebuild the graph.
 
 ## Why This Matters
