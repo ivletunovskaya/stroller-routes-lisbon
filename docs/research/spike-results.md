@@ -116,7 +116,7 @@ Google's walking time is estimated at GraphHopper's foot pace; "gentler" means t
 
 Also found: a slope limit sent with the request (`custom_model`) does not change where GraphHopper snaps the end point. The route then detours to reach a steep last edge that a profile with the same limit avoids (Comércio → Sé: 4.3 km instead of 0.6 km). Each limit therefore has its own profile.
 
-Open: whether the +29% at the Alvito pool entrance is real or a terrain artefact.
+Confirmed by the author: the last stretch to the Alvito pool along Estrada do Alvito is very steep, so the +29% on the 2 m model is real, not an artefact. Open: whether the pool can be entered from the Rua Professor Vieira Natividade side, where the gentler way ends; if so, a link ending there may hold.
 
 ## Measurement log
 
