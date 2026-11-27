@@ -39,3 +39,11 @@ uv run spike/calibrate_stairs.py
 Set `GOOGLE_MAPS_API_KEY` to include the check of the route Google actually draws. Google's route lines are only used in memory and never written to disk.
 
 Route geometries are written to `data/spike-out/*.geojson`; drop them onto geojson.io to compare the ordinary walk (grey) with the stroller route (blue).
+
+## Compare with Google's suggestion
+
+```bash
+set -a && source .env && set +a && uv run spike/compare_routes.py
+```
+
+For each trip: Google's suggested route, stair-free alternatives under 5/7/9/12% uphill limits, and the answer (Google's route is the most comfortable / a better way and its cost / no stair-free way). Needs the `stroller_up*` profiles, so rebuild the graph (delete `data/graph-cache`) after pulling this change.

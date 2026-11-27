@@ -37,7 +37,7 @@ The plan was to feed DGT's 2 m LiDAR terrain model to GraphHopper. GraphHopper 1
 
 `scripts/prepare_elevation.py` resamples the DGT bare-earth model into the one-arc-second HGT tile that covers Lisbon (3601 × 3601, whole metres, SRTM filling areas outside the DGT tiles) and writes it zipped, as `data/elevation-hgt/N38W010.hgt.zip` (`scripts/prepare_elevation.py:76`). `config/graphhopper.yml` points `graph.elevation.cache_dir` at that folder with `provider: hgt`, bilinear interpolation, long-edge sampling and moving-average smoothing.
 
-Because GraphHopper only gets a ~30 m, whole-metre grid, the full 2 m model is kept (`data/dgt/lisbon.vrt`) and the steepest stretch of a route, ours or Google's, is measured on it in our own code (`dgt_grades`, `spike/spike_routes.py:77`).
+Because GraphHopper only gets a ~30 m, whole-metre grid, the full 2 m model is kept (`data/dgt/lisbon.vrt`) and the steepest stretch of a route, ours or Google's, is measured on it in our own code (`dgt_profile` and `dgt_grades` in `spike/spike_routes.py`).
 
 ## Why This Works
 

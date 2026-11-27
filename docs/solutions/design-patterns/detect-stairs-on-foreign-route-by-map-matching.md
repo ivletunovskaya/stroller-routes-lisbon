@@ -6,6 +6,7 @@ module: route verification
 problem_type: design_pattern
 component: service_layer
 severity: high
+last_updated: 2026-11-26
 applies_when:
   - "Checking whether a route line drawn by another service (Google Maps) uses OSM staircases"
   - "Any check that must say which OSM ways a polyline travels, when the polyline was not built on the OSM graph"
@@ -34,9 +35,9 @@ Why the geometric rule fails:
 
 ## Guidance
 
-1. **Snap the foreign line onto the OSM walking graph** with GraphHopper's `/match` endpoint (`foot` profile), then read `road_class` and `osm_way_id` path details. The staircases are the ways on `road_class == steps` segments. See `stairs_by_matching` in `spike/spike_routes.py:177`.
+1. **Snap the foreign line onto the OSM walking graph** with GraphHopper's `/match` endpoint (`foot` profile), then read `road_class` and `osm_way_id` path details. The staircases are the ways on `road_class == steps` segments. See `stairs_by_matching` in `spike/spike_routes.py`.
 2. **Densify the line before matching.** Send a point every ~10 m (`gps_accuracy` 15). Google polylines are sparse, and the matcher needs dense points to follow Lisbon's short street segments.
-3. **Count street staircases only.** Drop OSM `highway=steps` ways tagged `indoor`, `level` or `conveying` (stations, buildings, escalators); see `spike/spike_routes.py:120`. In this session's calibration run, none of the staircases the routes really used carried these tags.
+3. **Count street staircases only.** Drop OSM `highway=steps` ways tagged `indoor`, `level` or `conveying` (stations, buildings, escalators); see `load_stairs` in `spike/spike_routes.py`. In this session's calibration run, none of the staircases the routes really used carried these tags.
 4. **Ask GraphHopper for `osm_way_id`.** It is not a default path detail: add `osm_way_id` to `graph.encoded_values` and rebuild the graph.
 
 ## Why This Matters
@@ -46,13 +47,15 @@ False stair hits are not harmless. In the pre-send check a false hit makes the a
 ## When to Apply
 
 - Any time stairs, or any other OSM way attribute, must be read off a line that was not routed on our graph.
-- Not needed for our own GraphHopper routes: ask GraphHopper for `road_class` details on the route itself.
+- Never for our own GraphHopper routes: read `road_class` and `osm_way_id` details on the route itself (`gh_route` in `spike/spike_routes.py`). On the first real trips, matching our own stroller route (Let's Pastrami → Escola de Pedro Nunes) reported two short staircases beside the footway (`w1566675914`, 3 steps; `w1566675916`, 2 steps) that the route details show it never used (`docs/research/spike-results.md`, Finding 7).
 
 ## Examples
 
 Before, proximity (`docs/research/spike-results.md`, Measurement log): on Praça da Figueira → Castelo the stroller route was reported as using staircase `w731800499`. It is a metro entrance (`level=0;-1`) beside the square, which the route never used.
 
 After, matching: the same route reports no stairs, and the ordinary walk reports exactly the one staircase GraphHopper itself routed over (`w244600206`).
+
+Caveat: matching is not free of false hits. Short staircases right beside a footway can still be picked up, as on the first real trips.
 
 Caveat: the ground truth in the calibration comes from the same graph the matcher snaps to, so real Google lines may score somewhat lower. Re-measure on Google lines once enough real trips are checked.
 

@@ -78,6 +78,52 @@ What this says:
 - **Slope checks catch what stair checks miss.** Google's own route to the Sé has no stairs but a +20% climb; with stairs-only checking it would have been passed as fine.
 - **The thresholds are not settled.** An 8% cap turns Rossio → Chiado into a 44-minute detour. Whether parents would rather push up Rua do Carmo, and how steep a short ramp is acceptable (our routes still show +10–11% over 15 m), can only come from real trips.
 
+## Finding 7: first real trips (2026-11-26)
+
+Three trips from the author. End points come from her Google Maps links (the first trip's playground was wrongly guessed at first); her notes on stairs and her actual stroller way are still to come.
+
+| Trip | Ordinary walk | Stroller route | Google link |
+|---|---|---|---|
+| MACAM → Sud Kids (riverside, Av. Brasília 311) | 1,040 m over two footbridge staircases (`w98491671`, `w98491675`), as the author said | 1,578 m over the MAAT footbridge, no stairs in OSM, +3% / −4% | holds with 1 waypoint |
+| Biblioteca de Alcântara → Piscina do Alvito | 757 m, +13% | 10,403 m, 137 min, through Monsanto | cannot be verified: the detour leaves the downloaded 2 m tiles |
+| Let's Pastrami → Escola de Pedro Nunes | 1,465 m, +27% | 2,387 m, +14% on the 2 m model | "holds", but Google takes another way at the same +14% |
+
+What the real trips exposed in the check itself:
+- **Map matching our own route reported stairs it never used.** The stroller route Let's Pastrami → Pedro Nunes was reported with two short staircases (`w1566675914`, 3 steps; `w1566675916`, 2 steps); GraphHopper's route details show no steps. Our own routes now take their stairs from GraphHopper's `road_class` / `osm_way_id` details; matching stays for Google's lines only.
+- **A link was called "holds" when our slope was unknown.** On the Alvito trip our route left the 2 m tiles, so the slope comparison was skipped and Google's direct +18% climb passed. A link now holds only when both slopes are known; otherwise the verdict is "cannot be verified".
+- **The 8% limit and the 2 m measurement do not agree.** GraphHopper applies the limit to edge averages on a ~30 m grid, while the 2 m check takes the steepest 15 m stretch. Routes within the router's limit show +10% to +14% on the 2 m model, so the "above the uphill limit" flag fires on almost every hill trip. Which number matches what a parent feels needs her account of these streets.
+- **The steepest stretch can sit at the destination itself.** The −26% on the MACAM trip is the first 15 m, from the museum point (inside the grounds) to the street.
+- **Bridges look like cliffs on the 2 m terrain model.** It is bare earth, so a route over the MAAT footbridge showed +31% / −39%: the ground under the deck. Stretches on bridges, raised plazas and tunnels (OSM `bridge`, `tunnel` or a non-zero `layer`, within 8 m of the line) are now bridged with a straight line between the ground on either side (`data/lisbon-offground.geojson`). The stroller route then reads +3% / −4%.
+- **Confirmed by the author:** the MAAT footbridge has a ramp and is fine with a stroller, so the stroller route MACAM → Sud Kids matches how she walks it. This is the first trip where the router's answer is confirmed on the ground.
+- **The downloaded 2 m tiles stop short of Monsanto and western Belém.** Trips there need more DGT tiles.
+
+## Finding 8: compare with Google's suggestion instead of a fixed limit (2026-11-27)
+
+The author reframed the question: the assistant should say how Google advises, whether that is the only comfortable way, and whether a better one exists. A fixed 8% limit answered a different question and produced useless detours (10 km through Monsanto instead of 800 m to the Alvito pool).
+
+`spike/compare_routes.py` takes Google's suggested route and stair-free alternatives under uphill limits of 5, 7, 9 and 12% (one GraphHopper profile each, `config/stroller-up*.json`), and answers with one of: Google's route is already the most comfortable; a better way exists and what it costs; no stair-free way.
+
+| Trip | Google suggests | Answer |
+|---|---|---|
+| Praça da Figueira → Castelo | 1,357 m, 1 staircase | no stair-free way (lifts not in the router yet) |
+| Rossio → Camões | 642 m, 4 staircases, +50% | stair-free way 1,352 m, +15%, about +10 min; the link holds with 1 waypoint |
+| Comércio → Sé | 512 m, no stairs, +20% | Google's route is already the most comfortable found |
+| MACAM → Sud Kids | 1,034 m, 2 footbridge staircases | stair-free way over the MAAT bridge (ramp confirmed), +3%, about +7 min; the link holds with 1 waypoint |
+| Biblioteca de Alcântara → Piscina do Alvito | 659 m, no stairs, +29% in the last ~40 m on Estrada do Alvito | gentler way along Rua Professor Vieira Natividade, 813 m, +12%, about +4 min; Google cannot be made to follow it with 3 waypoints |
+| Let's Pastrami → Escola de Pedro Nunes | 1,382 m, no stairs, +14% on Calçada da Estrela | Google's route is already the most comfortable found |
+
+Google's walking time is estimated at GraphHopper's foot pace; "gentler" means the steepest 15 m stretch is at least 3 points lower, within +10 min or +50% of Google's time.
+
+Also found: a slope limit sent with the request (`custom_model`) does not change where GraphHopper snaps the end point. The route then detours to reach a steep last edge that a profile with the same limit avoids (Comércio → Sé: 4.3 km instead of 0.6 km). Each limit therefore has its own profile.
+
+Confirmed by the author: the last stretch to the Alvito pool along Estrada do Alvito is very steep, so the +29% on the 2 m model is real, not an artefact. Open: whether the pool can be entered from the Rua Professor Vieira Natividade side, where the gentler way ends; if so, a link ending there may hold.
+
+## Finding 9: the entrance matters as much as the way (2026-11-27)
+
+The Alvito pool has entrances on both sides (author). To the entrance on the Estrada do Alvito side, Google's way ends with the very steep stretch (+29%, confirmed). To the entrance on the Rua Professor Vieira Natividade side, Google's own way is the gentle one: 762 m, no stairs, and it runs within 10 m of our best alternative the whole way. So the useful answer is "go to the side entrance; Google's route there is fine", and no waypoints are needed.
+
+This also exposed noise in the check: on the same street, the 2 m model gave Google's line +18% and ours +13%, because the two lines sit a few metres apart (walls, kerbs, embankments). A Google line within 15 m of ours everywhere now counts as the same way (`SAME_WAY_M`): only stairs are compared, and it is not offered as an "alternative" to itself.
+
 ## Measurement log
 
 Raw observations from the session runs, kept so that later documents can cite them.
@@ -91,9 +137,11 @@ Raw observations from the session runs, kept so that later documents can cite th
 
 ## Still to do
 
-- [ ] 3–4 real trips from the author in `spike/routes.yaml`, with where the stairs actually are and which way she walks with a stroller.
+- [x] 3 real trips from the author in `spike/routes.yaml` (points only).
+- [ ] Her notes for them: where the stairs actually are and which way she walks with a stroller.
+- [ ] DGT tiles for Monsanto and western Belém.
 - [x] DGT MDT 2 m tiles downloaded and wired in (GraphHopper grid + 2 m slope check).
-- [ ] Tune the slope thresholds on real trips.
+- [ ] Tune what counts as "gentler" and the extra-time budget on real trips (Finding 8).
 - [x] Google Maps Platform key set up; the check runs (computeRoutes + map matching).
 - [ ] For each real trip, check whether the link with ≤3 waypoints keeps Google on our route.
 - [ ] The author taps each link inside Telegram and records whether the Google Maps app keeps the waypoints and draws the same route.

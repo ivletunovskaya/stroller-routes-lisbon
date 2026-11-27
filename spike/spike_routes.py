@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["httpx", "shapely", "pyyaml", "rasterio", "pyproj"]
+# dependencies = ["httpx", "shapely", "pyyaml", "rasterio", "pyproj", "numpy"]
 # ///
 """Risk check: compare stroller routes with ordinary walking routes on real trips.
 
@@ -24,7 +24,7 @@ import math
 import os
 import sys
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import quote
 
@@ -32,7 +32,11 @@ import httpx
 import rasterio
 import yaml
 from pyproj import Transformer
+import numpy as np
+import shapely
 from shapely.geometry import LineString, Point, shape
+from shapely.ops import unary_union
+from shapely.prepared import prep
 from shapely.strtree import STRtree
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -43,6 +47,10 @@ MAX_WAYPOINTS = 3
 SNAP_LIMIT_M = 40.0
 # Google's route may be this many percentage points steeper than ours and still count as holding it.
 SLOPE_TOLERANCE = 2.0
+# Google's line within this many metres of ours everywhere is the same way. Slopes measured
+# on two lines a few metres apart differ by several points (walls, kerbs, embankments on the
+# 2 m model), so on the same way only stairs are compared.
+SAME_WAY_M = 15.0
 
 THRESHOLDS = tomllib.loads((ROOT / "config" / "thresholds.toml").read_text())
 
@@ -74,9 +82,32 @@ _dgt = rasterio.open(DGT_VRT) if DGT_VRT.exists() else None
 _to_dgt = Transformer.from_crs("EPSG:4326", _dgt.crs, always_xy=True) if _dgt else None
 
 
-def dgt_grades(coords_lonlat: list[tuple[float, float]], step_m: float = 2.0, window_m: float = 15.0):
-    """Steepest climb and descent in percent along a line, from DGT's 2 m bare-earth
-    model, measured over a sliding window. None where the line leaves the model."""
+def _load_offground():
+    """Walkable ways that are not on the ground: bridges, raised plazas, tunnels."""
+    path = ROOT / "data" / "lisbon-offground.geojson"
+    if _dgt is None or not path.exists():
+        return None
+    shapes = []
+    for f in json.loads(path.read_text())["features"]:
+        props = f.get("properties") or {}
+        if "highway" not in props:
+            continue
+        layer = str(props.get("layer", "0")).split(";")[0]
+        off = props.get("bridge", "no") != "no" or props.get("tunnel", "no") != "no" or layer not in ("0", "")
+        if off:
+            geom = shapely.transform(shape(f["geometry"]), lambda c: np.column_stack(_to_dgt.transform(c[:, 0], c[:, 1])))
+            # Wide enough for Google lines, which run a few metres off the OSM way.
+            shapes.append(geom.buffer(8))
+    return prep(unary_union(shapes)) if shapes else None
+
+
+_offground = _load_offground()
+
+
+def dgt_profile(coords_lonlat: list[tuple[float, float]], step_m: float = 2.0):
+    """Heights every ~step_m metres along a line from DGT's 2 m bare-earth model,
+    with bridges and raised plazas bridged over. Returns (step, heights), or None
+    where the line leaves the model."""
     if _dgt is None:
         return None
     xs, ys = _to_dgt.transform([c[0] for c in coords_lonlat], [c[1] for c in coords_lonlat])
@@ -86,11 +117,50 @@ def dgt_grades(coords_lonlat: list[tuple[float, float]], step_m: float = 2.0, wi
     heights = [v[0] for v in _dgt.sample([(p.x, p.y) for p in pts])]
     if any(h is None or h < -50 for h in heights):
         return None
-    k = max(int(window_m / (line.length / n)), 1)
-    grades = [100 * (heights[i + k] - heights[i]) / (k * line.length / n) for i in range(len(heights) - k)]
+    # The terrain model is bare earth: on a bridge or a raised plaza it gives the
+    # ground below, not the deck. Bridge those stretches with a straight line
+    # between the last and next points on the ground.
+    if _offground is not None:
+        off = [_offground.contains(p) for p in pts]
+        ground = [i for i, o in enumerate(off) if not o]
+        if not ground:
+            return None
+        for i, o in enumerate(off):
+            if o:
+                before = max((g for g in ground if g < i), default=None)
+                after = min((g for g in ground if g > i), default=None)
+                if before is None or after is None:
+                    heights[i] = heights[after if before is None else before]
+                else:
+                    w = (i - before) / (after - before)
+                    heights[i] = heights[before] * (1 - w) + heights[after] * w
+    return line.length / n, heights
+
+
+def dgt_grades(coords_lonlat: list[tuple[float, float]], step_m: float = 2.0, window_m: float = 15.0):
+    """Steepest climb and descent in percent along a line, measured over a sliding
+    window on the 2 m terrain model. None where the line leaves the model."""
+    prof = dgt_profile(coords_lonlat, step_m)
+    if prof is None:
+        return None
+    step, heights = prof
+    k = max(int(window_m / step), 1)
+    grades = [100 * (heights[i + k] - heights[i]) / (k * step) for i in range(len(heights) - k)]
     if not grades:
         return 0.0, 0.0
     return max(grades), min(grades)
+
+
+def dgt_climb(coords_lonlat: list[tuple[float, float]], every_m: float = 10.0) -> float | None:
+    """Total metres climbed along a line, from heights every ~10 m (finer steps add
+    up terrain noise). None where the line leaves the model."""
+    prof = dgt_profile(coords_lonlat)
+    if prof is None:
+        return None
+    step, heights = prof
+    k = max(int(every_m / step), 1)
+    h = heights[::k] + ([heights[-1]] if (len(heights) - 1) % k else [])
+    return sum(max(b - a, 0.0) for a, b in zip(h, h[1:]))
 
 
 def fmt_grades(g) -> str:
@@ -222,31 +292,47 @@ class Route:
     elevations: list[float]
     distance_m: float
     time_s: float
+    stairs: set[str] = field(default_factory=set)  # OSM ids of staircases used
 
     @property
     def line(self) -> LineString:
         return line_m(self.coords)
 
 
-def gh_route(client: httpx.Client, profile: str, start, end) -> Route | None:
+def gh_route(client: httpx.Client, profile: str, start, end, custom_model: dict | None = None) -> Route | None:
     body = {
         "points": [[start[1], start[0]], [end[1], end[0]]],
         "profile": profile,
         "points_encoded": False,
         "elevation": True,
         "instructions": False,
+        "details": ["road_class", "osm_way_id"],
     }
+    if custom_model:
+        # Added on top of the profile's own model (no CH, so per-request models work).
+        body["custom_model"] = custom_model
     resp = client.post(f"{GH_URL}/route", json=body, timeout=30)
     if resp.status_code == 400:
         return None  # no route in this profile
     resp.raise_for_status()
     path = resp.json()["paths"][0]
     pts = path["points"]["coordinates"]
+    # Stairs on our own route come straight from the graph, not from map matching:
+    # matching our line again can snap it onto a short staircase beside the footway.
+    ids = path["details"]["osm_way_id"]
+    stairs = {
+        f"w{way}"
+        for a, b, v in path["details"]["road_class"]
+        if v == "steps"
+        for s, e, way in ids
+        if s < b and e > a
+    }
     return Route(
         coords=[(p[0], p[1]) for p in pts],
         elevations=[p[2] if len(p) > 2 else 0.0 for p in pts],
         distance_m=path["distance"],
         time_s=path["time"] / 1000,
+        stairs=stairs,
     )
 
 
@@ -397,19 +483,24 @@ def pin_to_google(client: httpx.Client, key: str, start, end, ours: Route, names
             and g_grades[0] > our_grades[0] + SLOPE_TOLERANCE
         )
         gap = our_line.hausdorff_distance(g_line)
+        if gap <= SAME_WAY_M:
+            too_steep = False
         print(
             f"google, {len(waypoints)} waypoints: {g_dist:.0f} m, max gap {gap:.0f} m, "
             f"steepest {fmt_grades(g_grades)}{'  <-- steeper than ours' if too_steep else ''}, "
             f"stairs: {describe_stairs(stairs, names)}"
         )
-        holds = street_stairs == set() and not too_steep
+        # Without slope figures for both lines the link cannot be called safe.
+        slope_known = (g_grades is not None and our_grades is not None) or gap <= SAME_WAY_M
+        holds = street_stairs == set() and slope_known and not too_steep
         if holds or len(waypoints) == MAX_WAYPOINTS:
             break
         # The point of our route that Google's line is furthest from.
         far = max(ours.coords[1:-1], key=lambda c: g_line.distance(Point(to_m(*c))))
         waypoints.append((far[1], far[0]))
         waypoints.sort(key=lambda p: our_line.project(Point(to_m(p[1], p[0]))))
-    print(f"verdict       : link {'HOLDS' if holds else 'DOES NOT HOLD'} the stair-free route")
+    verdict = "HOLDS" if holds else "DOES NOT HOLD" if slope_known else "CANNOT BE VERIFIED (no 2 m terrain)"
+    print(f"verdict       : link {verdict} the stair-free route")
     print(f"google link   : {google_link(start, end, waypoints)}")
 
 
@@ -429,7 +520,7 @@ def main() -> None:
             if foot:
                 print(
                     f"ordinary walk : {foot.distance_m:.0f} m, {foot.time_s / 60:.0f} min, "
-                    f"steepest (2 m terrain) {fmt_grades(dgt_grades(foot.coords))}, stairs: {describe_stairs(stairs_by_matching(client, foot.coords), names)}"
+                    f"steepest (2 m terrain) {fmt_grades(dgt_grades(foot.coords))}, stairs: {describe_stairs(foot.stairs, names)}"
                 )
             if not ours:
                 print("stroller route: NONE within the limits (honest 'no route' case)")
@@ -451,7 +542,7 @@ def main() -> None:
             print(
                 f"stroller route: {ours.distance_m:.0f} m, {ours.time_s / 60:.0f} min, "
                 f"steepest (2 m terrain) {fmt_grades(g)}{flag}, "
-                f"stairs: {describe_stairs(stairs_by_matching(client, ours.coords), names)}"
+                f"stairs: {describe_stairs(ours.stairs, names)}"
             )
             if foot:
                 print(f"extra time vs ordinary walk: {(ours.time_s - foot.time_s) / 60:+.0f} min")
