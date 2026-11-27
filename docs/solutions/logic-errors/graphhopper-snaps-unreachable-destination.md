@@ -11,6 +11,7 @@ symptoms:
 root_cause: missing_validation
 resolution_type: code_fix
 severity: high
+last_updated: 2026-11-27
 framework_version: graphhopper 11.1
 tags: [graphhopper, snapping, no-route, honesty, custom-model]
 ---
@@ -50,6 +51,10 @@ GraphHopper snaps each request point to the closest edge that the profile allows
 - The real planner needs the same check, and a test: a destination only reachable by stairs must give "no route", not a shorter route elsewhere.
 - Tune the limit on real trips. 40 m tolerates squares and building entrances set back from the street, but it may need to depend on the place type.
 - Never present the snapped end point as the destination in replies or links.
+
+## Snapping follows the profile, not a per-request model
+
+A slope limit sent with the request as `custom_model` changes which edges the route may use, but not where the end point snaps. On Comércio → Sé (2026-11-27), the `stroller` profile snapped the end about 25 m away to a street it could reach and returned 626 m. The `foot` profile with the same kind of limit sent per request snapped to the steep edge right at the point and returned a 4.3 km detour to reach it (`docs/research/spike-results.md`, Finding 8). Give each limit its own profile (`config/stroller-up*.json`) when routes under different limits must be compared.
 
 ## Related
 
